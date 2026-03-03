@@ -4,6 +4,16 @@
 version: "3"
 
 tasks:
+  a-build:
+    desc: "Собрать приложение"
+    cmds:
+      - go build -o bin/app ./cmd/app
+
+  a-run:
+    desc: "Запустить приложение"
+    cmds:
+      - go run ./cmd/app
+
   # Сборка Docker Compose сервисов
   build:
     desc: Build Docker Compose services

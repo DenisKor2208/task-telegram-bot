@@ -89,21 +89,6 @@ func (c *CompletedTaskCommand) Execute(s types.Model, msg types.Message, session
 	buttons = append(buttons, additionalButtons...)
 	buttons = append(buttons, commands.BtnCompletedTask...)
 
-	/***************************/
-	// Добавляем кнопку "Назад"
-	/*lastCommand := s.GetLastUserCommand(msg.UserID)
-	buttons = append(
-		buttons,
-		bottypes.TgRowButtons{
-			{DisplayName: "Назад", Value: lastCommand},
-		})*/
-
-	//_, _ = sessionutils.SetSessionStateFromCommand(s.GetCtx(), s.GetSessionService(), msg.UserID, COMMAND_COMPLETED_TASKS)
-	//if err != nil {
-	//	return err
-	//}
-	/***************************/
-
 	return s.GetTgClient().ShowInlineButtons(text, buttons, msg.UserID)
 
 }

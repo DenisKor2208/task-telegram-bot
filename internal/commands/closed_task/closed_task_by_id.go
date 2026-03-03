@@ -61,16 +61,6 @@ func (c *ClosedTaskByIdCommand) Execute(s types.Model, msg types.Message, sessio
 
 	buttons = append(buttons, btnclosedtaskbyid.BtnClosedTaskByID...)
 
-	/********************/
-	// Добавляем кнопку "Назад"
-	/*	lastCommand := s.GetLastUserCommand(msg.UserID)
-		buttons = append(
-			buttons,
-			bottypes.TgRowButtons{
-				{DisplayName: "Назад", Value: lastCommand},
-			})*/
-	/********************/
-
 	return s.GetTgClient().ShowInlineButtons(text, buttons, msg.UserID)
 
 }

@@ -94,18 +94,6 @@ func (c *DeleteTaskCommand) Execute(s types.Model, msg types.Message, session *m
 	lastCommand := s.GetLastUserCommand(msg.UserID)
 	_ = lastCommand
 
-	/**********************************************************/
-	//buttons = append(
-	//	buttons,
-	//	bottypes.TgRowButtons{
-	//		{DisplayName: "Назад", Value: lastCommand},
-	//	})
-	//_, _ = sessionutils.SetSessionStateFromCommand(s.GetCtx(), s.GetSessionService(), msg.UserID, COMMAND_DELETE_TASKS)
-	//if err != nil {
-	//	return err
-	//}
-	/**********************************************************/
-
 	return s.GetTgClient().ShowInlineButtons(text, buttons, msg.UserID)
 
 }

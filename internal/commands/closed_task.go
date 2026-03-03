@@ -89,21 +89,6 @@ func (c *ClosedTaskCommand) Execute(s types.Model, msg types.Message, session *m
 	buttons = append(buttons, additionalButtons...)
 	buttons = append(buttons, commands.BtnClosedTask...)
 
-	/************************/
-	// Добавляем кнопку "Назад"
-	//lastCommand := session.Data["last_command"].(string)
-	//buttons = append(
-	//	buttons,
-	//	bottypes.TgRowButtons{
-	//		{DisplayName: "Назад", Value: lastCommand},
-	//	})
-
-	//_, _ = sessionutils.SetSessionStateFromCommand(s.GetCtx(), s.GetSessionService(), msg.UserID, COMMAND_CLOSED_TASKS)
-	//if err != nil {
-	//	return err
-	//}
-	/************************/
-
 	return s.GetTgClient().ShowInlineButtons(text, buttons, msg.UserID)
 
 }
