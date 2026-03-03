@@ -1,0 +1,61 @@
+# Go build/cache
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.prof
+*.db
+coverage.out
+
+# Go workspace
+/bin/
+/pkg/
+
+# Temporary build files
+/cmd/app/__debug_bin*
+/cmd/migrator/__debug_bin*
+
+# Environment variables and configuration files
+*.env
+.env.local
+.env.production
+*.local.yaml
+config/local.yaml
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Dependencies cache (if not using Go modules)
+vendor/
+
+# Docker
+.dockerignore
+*.tar.gz
+
+# Docker build artifacts
+build/
+dist/
+
+# Database files (if using local database files)
+*.sqlite
+*.db3
+*.fdb
+
+# Sensitive files
+config/secrets.*
+secrets/
+credentials.json

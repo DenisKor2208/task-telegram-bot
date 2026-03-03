@@ -1,0 +1,27 @@
+services:
+  postgres:
+    container_name: postgres_tgbot
+    image: postgres:alpine
+    restart: always
+    environment:
+      POSTGRES_DB: tgbot
+      POSTGRES_USER: tgbotadmin
+      POSTGRES_PASSWORD: tgbotadminpass
+      PG_TRUST_LOCALNET: true
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_tgbot_task_data:/var/lib/postgresql/data
+
+  redis:
+    container_name: redis_tgbot
+    image: redis:alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_tgbot_task_data:/data
+
+volumes:
+  postgres_tgbot_task_data:
+  redis_tgbot_task_data:

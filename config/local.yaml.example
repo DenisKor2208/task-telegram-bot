@@ -1,0 +1,13 @@
+# Окружение
+env: "local" #dev, prod
+# Токен бота в телеграме.
+api_telegram_token: "XXX:XXXX"
+# Строка подключения к базе данных.
+ConnectionStringDB: "host=localhost port=5432 dbname=tgbot user=tgbotadmin password=tgbotadminpass sslmode=disable"
+
+
+#storage_path: "./storage/sso.db"
+#token_ttl: 1h
+#grpc:
+#  port: 44044
+#  timeout: 10h

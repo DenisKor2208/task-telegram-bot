@@ -1,0 +1,98 @@
+package repositories
+
+import (
+	"context"
+	"time"
+
+	"github.com/DenisKor2208/task-telegram-bot/internal/helpers/dbutils"
+	"github.com/DenisKor2208/task-telegram-bot/internal/models"
+	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
+)
+
+// UserStorage handles database operations for User entities.
+type UserStorage struct {
+	db *sqlx.DB
+}
+
+// NewUserStorage creates a new instance of UserStorage with the provided database connection.
+func NewUserStorage(db *sqlx.DB) *UserStorage {
+	return &UserStorage{db: db}
+}
+
+// GetUserByTgID возвращает пользователя по его Telegram ID.
+func (us *UserStorage) GetUserByTgID(ctx context.Context, userID int) (*models.User, error) {
+	var user models.User
+
+	const sqlString = `SELECT id, tg_id, name, created_at, updated_at FROM users WHERE tg_id = $1`
+
+	// Выполнение запроса на получение данных.
+	err := dbutils.Get(ctx, us.db, &user, sqlString, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+/*
+// GetAllUsers retrieves all users from the database.
+func (us *UserStorage) GetAllUsers() ([]models.User, error) {
+	var users []models.User
+	err := us.db.Select(&users, "SELECT id, tg_id, name, created_at, updated_at FROM users ORDER BY id")
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+*/
+
+// CreateUser inserts a new user into the database. Assumes TgID, Name are provided; CreatedAt and UpdatedAt can be set to now.
+func (us *UserStorage) CreateUser(ctx context.Context, user *models.User) (*models.User, error) {
+
+	// Проверка существования пользователя в БД (используем переданный ctx)
+	if existingUser, err := us.GetUserByTgID(ctx, user.TgID); err == nil {
+		return existingUser, nil
+	}
+
+	const sqlString = `
+        INSERT INTO users (tg_id, name, created_at, updated_at) 
+        VALUES (:tg_id, :name, :created_at, :updated_at)
+    `
+
+	now := time.Now()
+	if user.CreatedAt.IsZero() {
+		user.CreatedAt = now
+	}
+	if user.UpdatedAt.IsZero() {
+		user.UpdatedAt = now
+	}
+
+	// Выполняем вставку
+	_, err := dbutils.NamedExec(ctx, us.db, sqlString, user)
+	if err != nil {
+		return nil, errors.Wrap(err, "не удалось создать пользователя")
+	}
+
+	// После вставки получаем созданного пользователя
+	createdUser, err := us.GetUserByTgID(ctx, user.TgID)
+	if err != nil {
+		return nil, errors.Wrap(err, "пользователь создан, но не удалось получить данные")
+	}
+
+	return createdUser, nil
+}
+
+/*
+// UpdateUser updates an existing user in the database. Updates UpdatedAt to now.
+func (us *UserStorage) UpdateUser(user *models.User) error {
+	user.UpdatedAt = time.Now()
+	_, err := us.db.NamedExec("UPDATE users SET tg_id = :tg_id, name = :name, updated_at = :updated_at WHERE id = :id", user)
+	return err
+}
+
+// DeleteUser removes a user by their ID.
+func (us *UserStorage) DeleteUser(id int) error {
+	_, err := us.db.Exec("DELETE FROM users WHERE id = \$1", id)
+	return err
+}*/

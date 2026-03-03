@@ -1,0 +1,65 @@
+# See: https://taskfile.dev
+# go install github.com/go-task/task/v3/cmd/task@latest
+
+version: "3"
+
+tasks:
+  # Сборка Docker Compose сервисов
+  build:
+    desc: Build Docker Compose services
+    cmds:
+      - docker compose build
+
+  # Запуск Docker Compose сервисов в фоновом режиме
+  run:
+    desc: Run Docker Compose services in detached mode
+    cmds:
+      - docker compose up -d
+
+  # Остановка и удаление Docker Compose сервисов
+  down:
+    desc: Stop and remove Docker Compose services
+    cmds:
+      - docker compose down
+
+  # Справка по работе с миграциями
+  # Использование: task mg:help
+  mg:help:
+    desc: Справка по работе с миграциями
+    cmds:
+      - go run cmd/migrator/main.go help
+
+  # Создание новой миграции
+  # Использование: task mg:create NAME=my_migration
+  mg:create:
+    desc: Создать новую миграцию
+    cmds:
+      - go run cmd/migrator/main.go create {{.NAME}}
+
+  # Применение всех миграций
+  # Использование: task mg:up
+  mg:up:
+    desc: Применить все миграции
+    cmds:
+      - go run cmd/migrator/main.go up
+
+  # Откат n миграций
+  # Использование: task mg:down N=2
+  mg:down:
+    desc: Откатить миграции
+    cmds:
+      - go run cmd/migrator/main.go down {{.N}}
+
+  # Показать текущую версию
+  # Использование: task mg:version
+  mg:version:
+    desc: Показать текущую версию миграций
+    cmds:
+      - go run cmd/migrator/main.go version
+
+  # Перейти к конкретной версии
+  # Использование: task mg:goto VERSION=5
+  mg:goto:
+    desc: Перейти к конкретной версии миграции
+    cmds:
+      - go run cmd/migrator/main.go goto {{.VERSION}}
