@@ -5,12 +5,13 @@ import (
 	"time"
 
 	"github.com/DenisKor2208/task-telegram-bot/internal/helpers/callbacktokenpayloadutils"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
 	"github.com/DenisKor2208/task-telegram-bot/internal/logger"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/bottypes"
 	"github.com/DenisKor2208/task-telegram-bot/internal/models"
 	"github.com/DenisKor2208/task-telegram-bot/internal/repositories"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
-	"github.com/DenisKor2208/task-telegram-bot/internal/types"
 	"github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands"
 	"github.com/pkg/errors"
 )
@@ -22,7 +23,7 @@ const (
 // ClosedTaskCommand - структура команды /closed_task - "Завершить задачу"
 type ClosedTaskCommand struct{}
 
-func (c *ClosedTaskCommand) Execute(s types.Model, msg types.Message, session *models.UserSession) error {
+func (c *ClosedTaskCommand) Execute(s command.Model, msg messaging.Message) error {
 
 	var tasks []*models.Task
 	var err error

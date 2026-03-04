@@ -1,13 +1,14 @@
 package edit_task
 
 import (
-	"strconv"
 	"time"
 
+	"github.com/DenisKor2208/task-telegram-bot/internal/helpers/sessionutils"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/messages"
 	"github.com/DenisKor2208/task-telegram-bot/internal/models"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
-	"github.com/DenisKor2208/task-telegram-bot/internal/types"
 	btnupdatetask "github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands/edit_task"
 	"github.com/pkg/errors"
 )
@@ -15,28 +16,20 @@ import (
 // UpdateTaskCommand - структура команды /update_task
 type UpdateTaskCommand struct{}
 
-func (c *UpdateTaskCommand) Execute(s types.Model, msg types.Message, session *models.UserSession) error {
+func (c *UpdateTaskCommand) Execute(s command.Model, msg messaging.Message) error {
 
 	var task *models.Task
+
+	session, err := s.GetSessionService().GetOrCreateSession(s.GetCtx(), msg.UserID)
 
 	if session.Data == nil {
 		return errors.New("no data in session: arguments not found")
 	}
 
 	// Получаем ID задачи из сессии
-	// taskId, ok := session.Data["task_id"].(string)
-	taskId, ok := session.Data["payload_task_id"].(int64)
-	if !ok {
-		// Fallback на старый способ (для обратной совместимости)
-		if legacyID, ok := session.Data["task_id"].(string); ok {
-			id, err := strconv.ParseInt(legacyID, 10, 64)
-			if err != nil {
-				return errors.New("Не удалось обновить задачу")
-			}
-			taskId = id
-		} else {
-			return errors.New("ID задачи не найден в сессии")
-		}
+	taskID, err := sessionutils.ExtractInt64FromSession(session, "payload_task_id")
+	if err != nil {
+		return err
 	}
 
 	// Получаем новое название задачи из сессии
@@ -69,7 +62,7 @@ func (c *UpdateTaskCommand) Execute(s types.Model, msg types.Message, session *m
 
 	// Получаем задачу по ID
 	// task, err = s.GetTaskStorage().GetTaskByID(s.GetCtx(), argsInt)
-	task, err := s.GetTaskStorage().GetTaskByID(s.GetCtx(), taskId)
+	task, err = s.GetTaskStorage().GetTaskByID(s.GetCtx(), taskID)
 	if err != nil {
 		return errors.Wrap(err, "Не удалось изменить статус задачи")
 	}
@@ -94,7 +87,8 @@ func (c *UpdateTaskCommand) Execute(s types.Model, msg types.Message, session *m
 	}
 
 	// Удаляем сессию
-	_ = s.GetSessionService().DeleteSession(s.GetCtx(), msg.UserID)
+	_, _ = sessionutils.SetSessionTaskToken(s.GetCtx(), s.GetSessionService(), msg.UserID, "")
+	_, _ = sessionutils.ClearSessionData(s.GetCtx(), s.GetSessionService(), msg.UserID)
 	//if err != nil {
 	//	return errors.Wrap(err, "Не удалось сохранить задачу")
 	//}

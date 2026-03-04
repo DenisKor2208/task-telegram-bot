@@ -3,9 +3,9 @@ package commands
 import (
 	"fmt"
 
-	"github.com/DenisKor2208/task-telegram-bot/internal/models"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
-	"github.com/DenisKor2208/task-telegram-bot/internal/types"
 )
 
 const (
@@ -15,7 +15,7 @@ const (
 // AddTaskCommand - структура команды /add_task - "Добавить задачу"
 type AddTaskCommand struct{}
 
-func (c *AddTaskCommand) Execute(s types.Model, msg types.Message, session *models.UserSession) error {
+func (c *AddTaskCommand) Execute(s command.Model, msg messaging.Message) error {
 	// Определяем отображаемое имя: сначала UserDisplayName, иначе UserName.
 	displayName := msg.UserDisplayName
 	if len(displayName) == 0 {

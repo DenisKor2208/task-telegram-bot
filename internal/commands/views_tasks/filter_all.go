@@ -3,10 +3,11 @@ package views_tasks
 import (
 	"fmt"
 
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/bottypes"
 	"github.com/DenisKor2208/task-telegram-bot/internal/models"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
-	"github.com/DenisKor2208/task-telegram-bot/internal/types"
 	btnviewstasks "github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands/views_tasks"
 	"github.com/pkg/errors"
 )
@@ -14,10 +15,12 @@ import (
 // FilterAllCommand - структура команды /filter_all
 type FilterAllCommand struct{}
 
-func (c *FilterAllCommand) Execute(s types.Model, msg types.Message, session *models.UserSession) error {
+func (c *FilterAllCommand) Execute(s command.Model, msg messaging.Message) error {
 
 	var tasks []*models.Task
 	var err error
+
+	session, err := s.GetSessionService().GetOrCreateSession(s.GetCtx(), msg.UserID)
 
 	tasks, err = s.GetTaskStorage().GetAllTasks(s.GetCtx())
 	if err != nil {

@@ -8,35 +8,38 @@ import (
 
 	configCommands "github.com/DenisKor2208/task-telegram-bot/internal/bot/config"
 	"github.com/DenisKor2208/task-telegram-bot/internal/helpers/sessionutils"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/service"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/storage"
 	"github.com/DenisKor2208/task-telegram-bot/internal/logger"
 	"github.com/DenisKor2208/task-telegram-bot/internal/models"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
-	"github.com/DenisKor2208/task-telegram-bot/internal/types"
 	"github.com/pkg/errors"
 )
 
 // Model Модель бота (клиент, хранилище, последние команды пользователя)
 type Model struct {
 	ctx                context.Context
-	userStorage        types.UserStorage
-	statusStorage      types.StatusStorage
-	taskStorage        types.TaskStorage
-	tgClient           types.MessageSender   // Клиент
-	commandRegistry    types.CommandRegistry // Хранилище команд
-	lastUserCommand    map[int64]string      // Последняя выбранная пользователем команда
-	sessionService     types.SessionService
-	configEntryService types.ConfigEntryService
+	userStorage        storage.User
+	statusStorage      storage.Status
+	taskStorage        storage.Task
+	tgClient           messaging.Sender // Клиент
+	commandRegistry    command.Registry // Хранилище команд
+	lastUserCommand    map[int64]string // Последняя выбранная пользователем команда
+	sessionService     service.Session
+	configEntryService service.ConfigEntryService
 }
 
 // New Генерация сущности для хранения клиента ТГ и хранилища пользователей.
 func New(
 	ctx context.Context,
-	userStorage types.UserStorage,
-	statusStorage types.StatusStorage,
-	taskStorage types.TaskStorage,
-	tgClient types.MessageSender,
-	registry types.CommandRegistry,
-	sessionService types.SessionService,
+	userStorage storage.User,
+	statusStorage storage.Status,
+	taskStorage storage.Task,
+	tgClient messaging.Sender,
+	registry command.Registry,
+	sessionService service.Session,
 ) *Model {
 	return &Model{
 		ctx:             ctx,
@@ -58,23 +61,23 @@ func (s *Model) SetCtx(ctx context.Context) {
 	s.ctx = ctx
 }
 
-func (s *Model) GetTgClient() types.MessageSender {
+func (s *Model) GetTgClient() messaging.Sender {
 	return s.tgClient
 }
 
-func (s *Model) GetCommandRegistry() types.CommandRegistry {
+func (s *Model) GetCommandRegistry() command.Registry {
 	return s.commandRegistry
 }
 
-func (s *Model) GetUserStorage() types.UserStorage {
+func (s *Model) GetUserStorage() storage.User {
 	return s.userStorage
 }
 
-func (s *Model) GetStatusStorage() types.StatusStorage {
+func (s *Model) GetStatusStorage() storage.Status {
 	return s.statusStorage
 }
 
-func (s *Model) GetTaskStorage() types.TaskStorage {
+func (s *Model) GetTaskStorage() storage.Task {
 	return s.taskStorage
 }
 
@@ -86,11 +89,11 @@ func (s *Model) SetLastUserCommand(userID int64, command string) {
 	s.lastUserCommand[userID] = command
 }
 
-func (s *Model) GetSessionService() types.SessionService {
+func (s *Model) GetSessionService() service.Session {
 	return s.sessionService
 }
 
-func (s *Model) GetConfigEntryService() types.ConfigEntryService {
+func (s *Model) GetConfigEntryService() service.ConfigEntryService {
 	return s.configEntryService
 }
 
@@ -99,7 +102,7 @@ func (s *Model) SetConfigEntryService(configEntryService *configCommands.ConfigE
 }
 
 // IncomingMessage Обработка входящего сообщения.
-func (s *Model) IncomingMessage(msg types.Message) error {
+func (s *Model) IncomingMessage(msg messaging.Message) error {
 
 	// Распознавание стандартных команд.
 	if isNeedReturn, err := checkBotCommands(s, msg); err != nil || isNeedReturn {
@@ -111,7 +114,7 @@ func (s *Model) IncomingMessage(msg types.Message) error {
 }
 
 // Распознавание стандартных команд бота.
-func checkBotCommands(s types.Model, msg types.Message) (bool, error) {
+func checkBotCommands(s command.Model, msg messaging.Message) (bool, error) {
 
 	// Если команда или аргументы не указаны, то не обрабатываем.
 	if msg.Command == "" && msg.Arguments == "" {
@@ -119,24 +122,24 @@ func checkBotCommands(s types.Model, msg types.Message) (bool, error) {
 	}
 
 	// Получаем сессию пользователя
-	session, err := s.GetSessionService().GetSession(s.GetCtx(), msg.UserID)
+	session, err := s.GetSessionService().GetOrCreateSession(s.GetCtx(), msg.UserID)
 	if err != nil {
 		logger.Error("Error getting user session", "err", err, "userID", msg.UserID)
 		return false, err
 	}
 	// Если не команда, без аргумента и в сессии нету токена задачи
-	if !msg.IsCommand && msg.Arguments != "" && session.State != "" {
-		msg.Arguments = session.State
+	if !msg.IsCommand && msg.Arguments != "" && session.TaskToken != "" {
+		msg.Arguments = session.TaskToken
 	}
 
 	// Проверяем, не является ли аргумент токеном задачи
 	if s.GetSessionService().IsCallbackToken(msg.Arguments) {
-		return handleCallbackToken(s, msg, session)
+		return handleCallbackToken(s, msg)
 	}
 
 	// Обработка команд
 	if msg.IsCommand {
-		return handleCommand(s, msg, session)
+		return handleCommand(s, msg)
 	}
 
 	// Обработка
@@ -189,7 +192,7 @@ func ParseForCommandSaveTask(input string) (description, date string, ok bool) {
 }
 
 // handleCommand — обрабатывает обычные команды (/start, /edit_task, /delete_task...)
-func handleCommand(s types.Model, msg types.Message, session *models.UserSession) (bool, error) {
+func handleCommand(s command.Model, msg messaging.Message) (bool, error) {
 
 	var err error
 
@@ -201,16 +204,16 @@ func handleCommand(s types.Model, msg types.Message, session *models.UserSession
 
 				// Устанавливаем в сессию потенциальную следующую команду
 				if nextState != "" {
-					_, _ = sessionutils.UpdateSessionData(s.GetCtx(), s.GetSessionService(), msg, map[string]interface{}{"next_command": nextState})
+					_, _ = sessionutils.UpdateSessionData(s.GetCtx(), s.GetSessionService(), msg.UserID, map[string]any{"next_command": nextState})
 				}
 
-				err = cmd.Execute(s, msg, session)
+				err = cmd.Execute(s, msg)
 				if err != nil {
 					return false, err
 				}
 
 				// Сохраняем текущую выполненную команду
-				_, _ = sessionutils.UpdateSessionData(s.GetCtx(), s.GetSessionService(), msg, map[string]interface{}{"last_command": cmdName})
+				_, _ = sessionutils.UpdateSessionData(s.GetCtx(), s.GetSessionService(), msg.UserID, map[string]any{"last_command": cmdName})
 
 				return true, nil
 			}
@@ -225,7 +228,7 @@ func handleCommand(s types.Model, msg types.Message, session *models.UserSession
 
 // handleFSM — обрабатывает аргументы без команды (продолжение диалога)
 // Например: после /add_task пользователь отправляет текст задачи
-func handleFSM(s types.Model, msg types.Message, session *models.UserSession) (bool, error) {
+func handleFSM(s command.Model, msg messaging.Message, session *models.UserSession) (bool, error) {
 
 	// Предыдущая выполненная команда
 	lastCommand, _ := session.Data["last_command"].(string)
@@ -260,20 +263,20 @@ func handleFSM(s types.Model, msg types.Message, session *models.UserSession) (b
 	var err error
 
 	// Сохраняем аргументы в сессию (в поле, указанное в конфиге) //TODO Скорее всего нужно перебирать в цикле
-	session, _ = sessionutils.UpdateSessionData(
-		s.GetCtx(), s.GetSessionService(), msg,
-		map[string]interface{}{config.CommandFields[0]: msg.Arguments},
+	_, _ = sessionutils.UpdateSessionData(
+		s.GetCtx(), s.GetSessionService(), msg.UserID,
+		map[string]any{config.CommandFields[0]: msg.Arguments},
 	)
 
 	// Выполняем целевую команду
-	err = cmd.Execute(s, msg, session)
+	err = cmd.Execute(s, msg)
 	if err != nil {
 		return false, err
 	}
 
 	_, _ = sessionutils.SetSessionTaskToken(s.GetCtx(), s.GetSessionService(), msg.UserID, "")
 	_, _ = sessionutils.ClearSessionData(s.GetCtx(), s.GetSessionService(), msg.UserID)
-	_, _ = sessionutils.UpdateSessionData(s.GetCtx(), s.GetSessionService(), msg, map[string]interface{}{"last_command": nextCommand})
+	_, _ = sessionutils.UpdateSessionData(s.GetCtx(), s.GetSessionService(), msg.UserID, map[string]any{"last_command": nextCommand})
 
 	// Некоторых команд удаляем сессию полностью (диалог окончен)
 	/* 	if slices.Contains([]string{"save_task", "update_task"}, config.TargetCommand) {
@@ -284,7 +287,7 @@ func handleFSM(s types.Model, msg types.Message, session *models.UserSession) (b
 }
 
 // handleCallbackToken — обрабатывает нажатие кнопки с callback-токеном
-func handleCallbackToken(s types.Model, msg types.Message, session *models.UserSession) (bool, error) {
+func handleCallbackToken(s command.Model, msg messaging.Message) (bool, error) {
 	// Получаем данные задачи по токену
 	payload, err := s.GetSessionService().GetCallbackPayload(s.GetCtx(), msg.Arguments)
 	if err != nil {
@@ -310,17 +313,21 @@ func handleCallbackToken(s types.Model, msg types.Message, session *models.UserS
 		return false, fmt.Errorf("unknown action: %s", payload.Action)
 	}
 
+	sessioData := make(map[string]any)
+
 	// Сохраняем данные по задаче
-	session.Data["payload_task_id"] = payload.TaskID
+	sessioData["payload_task_id"] = payload.TaskID
 	if payload.Field != "" {
-		session.Data["payload_field"] = payload.Field
+		sessioData["payload_field"] = payload.Field
 	}
+
+	_, _ = sessionutils.UpdateSessionData(s.GetCtx(), s.GetSessionService(), msg.UserID, sessioData)
 
 	// Выполняем целевую команду
 	if cmd, exists := s.GetCommandRegistry().GetCommand(payload.Action); exists {
 
 		// TODO возможно session нужно реально будет записывать в сессию
-		err = cmd.Execute(s, msg, session)
+		err = cmd.Execute(s, msg)
 		if err != nil {
 			return false, err
 		}

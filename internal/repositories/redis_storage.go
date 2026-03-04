@@ -40,7 +40,7 @@ func (rs *RedisStorage) Ping(ctx context.Context) (string, error) {
 
 // Set сохраняет значение по ключу с опциональным TTL.
 // value сериализуется в JSON. Если TTL == 0, ключ бессрочный.
-func (rs *RedisStorage) Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
+func (rs *RedisStorage) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
 	// Сериализуем value в JSON
 	data, err := json.Marshal(value)
 	if err != nil {
@@ -57,20 +57,20 @@ func (rs *RedisStorage) Set(ctx context.Context, key string, value interface{}, 
 		logger.Error("Ошибка сохранения в Redis", "key", key, "err", err)
 		return fmt.Errorf("redis set failed: %w", err)
 	}
-	logger.Info("Значение сохранено в Redis", "key", key, "ttl", ttl)
+	logger.Debug("Значение сохранено в Redis", "key", key, "ttl", ttl)
 	return nil
 }
 
 // Get получает значение по ключу и десериализует его из JSON.
 // Возвращает ошибку, если ключ не найден (redis.Nil).
-func (rs *RedisStorage) Get(ctx context.Context, key string, dest interface{}) error {
+func (rs *RedisStorage) Get(ctx context.Context, key string, dest any) error {
 	// Таймаут для операции
 	ctx, cancel := rs.applyDefaultTimeout(ctx)
 	defer cancel()
 
 	val, err := rs.client.Get(ctx, key).Result()
 	if err == redis.Nil {
-		logger.Warn("Ключ не найден в Redis", "key", key)
+		logger.Debug("Ключ не найден в Redis", "key", key)
 		return redis.Nil
 	}
 
@@ -85,7 +85,7 @@ func (rs *RedisStorage) Get(ctx context.Context, key string, dest interface{}) e
 		logger.Error("Ошибка десериализации значения из Redis", "key", key, "err", err)
 		return fmt.Errorf("failed to unmarshal value: %w", err)
 	}
-	logger.Info("Значение получено из Redis", "key", key)
+	logger.Debug("Значение получено из Redis", "key", key)
 	return nil
 }
 
@@ -101,20 +101,20 @@ func (rs *RedisStorage) Del(ctx context.Context, keys ...string) (int64, error) 
 		logger.Error("Ошибка удаления из Redis", "keys", keys, "err", err)
 		return 0, fmt.Errorf("redis del failed: %w", err)
 	}
-	logger.Info("Ключи удалены из Redis", "keys", keys, "deleted", deleted)
+	logger.Debug("Ключи удалены из Redis", "keys", keys, "deleted", deleted)
 	return deleted, nil
 }
 
 // GetDel получает значение по ключу и удаляет его атомарно (Redis >= 6.2).
 // Значение десериализуется в dest. Возвращает redis.Nil, если ключ не найден.
-func (rs *RedisStorage) GetDel(ctx context.Context, key string, dest interface{}) error {
+func (rs *RedisStorage) GetDel(ctx context.Context, key string, dest any) error {
 	ctx, cancel := rs.applyDefaultTimeout(ctx)
 	defer cancel()
 
 	// Используем настоящий GETDEL
 	val, err := rs.client.GetDel(ctx, key).Result()
 	if err == redis.Nil {
-		logger.Warn("Ключ не найден в Redis (GetDel)", "key", key)
+		logger.Debug("Ключ не найден в Redis (GetDel)", "key", key)
 		return redis.Nil
 	}
 	if err != nil {
@@ -129,7 +129,7 @@ func (rs *RedisStorage) GetDel(ctx context.Context, key string, dest interface{}
 		return fmt.Errorf("failed to unmarshal value: %w", err)
 	}
 
-	logger.Info("Значение получено и удалено в Redis", "key", key)
+	logger.Debug("Значение получено и удалено в Redis", "key", key)
 	return nil
 }
 
@@ -146,7 +146,7 @@ func (rs *RedisStorage) Exists(ctx context.Context, key string) (bool, error) {
 		return false, fmt.Errorf("redis exists failed: %w", err)
 	}
 	exists := count > 0
-	logger.Info("Проверка существования ключа в Redis", "key", key, "exists", exists)
+	logger.Debug("Проверка существования ключа в Redis", "key", key, "exists", exists)
 	return exists, nil
 }
 
@@ -162,7 +162,7 @@ func (rs *RedisStorage) Expire(ctx context.Context, key string, ttl time.Duratio
 		logger.Error("Ошибка установки TTL в Redis", "key", key, "ttl", ttl, "err", err)
 		return false, fmt.Errorf("redis expire failed: %w", err)
 	}
-	logger.Info("TTL установлен для ключа в Redis", "key", key, "ttl", ttl, "set", set)
+	logger.Debug("TTL установлен для ключа в Redis", "key", key, "ttl", ttl, "set", set)
 	return set, nil
 }
 
@@ -173,6 +173,7 @@ func (rs *RedisStorage) Close() error {
 }
 
 // applyDefaultTimeout применяет 5-секундный таймаут, если в контексте нет дедлайна.
+// TODO разобраться с Timeout
 func (rs *RedisStorage) applyDefaultTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
 	if _, ok := ctx.Deadline(); !ok {
 		return context.WithTimeout(ctx, 5*time.Second)

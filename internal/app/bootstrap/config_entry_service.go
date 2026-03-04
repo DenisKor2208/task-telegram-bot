@@ -2,12 +2,12 @@ package bootstrap
 
 import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/bot/config"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/service"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/messages"
-	"github.com/DenisKor2208/task-telegram-bot/internal/types"
 )
 
 func ConfigEntryService(msgModel *messages.Model) (*config.ConfigEntryService, error) {
-	initalConfig := map[string]types.ConfigEntry{
+	initalConfig := map[string]service.ConfigEntry{
 		"start":              {TargetCommand: "", CommandFields: []string{}},
 		"view_tasks":         {TargetCommand: "", CommandFields: []string{}},
 		"filter_all":         {TargetCommand: "", CommandFields: []string{}},

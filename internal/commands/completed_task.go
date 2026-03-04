@@ -3,16 +3,18 @@ package commands
 import (
 	"fmt"
 
+	"time"
+
 	"github.com/DenisKor2208/task-telegram-bot/internal/helpers/callbacktokenpayloadutils"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
 	"github.com/DenisKor2208/task-telegram-bot/internal/logger"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/bottypes"
 	"github.com/DenisKor2208/task-telegram-bot/internal/models"
 	"github.com/DenisKor2208/task-telegram-bot/internal/repositories"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
-	"github.com/DenisKor2208/task-telegram-bot/internal/types"
 	"github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands"
 	"github.com/pkg/errors"
-	"time"
 )
 
 const (
@@ -22,7 +24,7 @@ const (
 // CompletedTaskCommand - структура команды /completed_task - "Выполнить задачу"
 type CompletedTaskCommand struct{}
 
-func (c *CompletedTaskCommand) Execute(s types.Model, msg types.Message, session *models.UserSession) error {
+func (c *CompletedTaskCommand) Execute(s command.Model, msg messaging.Message) error {
 
 	var tasks []*models.Task
 	var err error

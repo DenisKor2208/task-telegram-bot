@@ -26,31 +26,31 @@ func init() {
 }
 
 // Fatal - запись в лог, уровень Fatal.
-func Fatal(msg string, keysAndValues ...interface{}) {
+func Fatal(msg string, keysAndValues ...any) {
 	sugar := logger.Sugar()
 	sugar.Fatalw(msg, keysAndValues...)
 }
 
 // Error - запись в лог, уровень Error.
-func Error(msg string, keysAndValues ...interface{}) {
+func Error(msg string, keysAndValues ...any) {
 	sugar := logger.Sugar()
 	sugar.Errorw(msg, keysAndValues...)
 }
 
 // Warn - запись в лог, уровень Warn.
-func Warn(msg string, keysAndValues ...interface{}) {
+func Warn(msg string, keysAndValues ...any) {
 	sugar := logger.Sugar()
 	sugar.Warnw(msg, keysAndValues...)
 }
 
 // Info - запись в лог, уровень Info.
-func Info(msg string, keysAndValues ...interface{}) {
+func Info(msg string, keysAndValues ...any) {
 	sugar := logger.Sugar()
 	sugar.Infow(msg, keysAndValues...)
 }
 
 // Debug - запись в лог, уровень Debug.
-func Debug(msg string, keysAndValues ...interface{}) {
+func Debug(msg string, keysAndValues ...any) {
 	sugar := logger.Sugar()
 	sugar.Debugw(msg, keysAndValues...)
 }

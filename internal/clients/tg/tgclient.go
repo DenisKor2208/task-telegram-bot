@@ -7,10 +7,10 @@ import (
 
 	"github.com/DenisKor2208/task-telegram-bot/internal/logger"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/messages"
-	"github.com/DenisKor2208/task-telegram-bot/internal/types"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/pkg/errors"
 
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/bottypes"
 )
 
@@ -92,7 +92,7 @@ func ProcessingMessages(tgUpdate *tgbotapi.Update, c *Client, msgModel *messages
 			isCommand = true
 		}
 
-		err := msgModel.IncomingMessage(types.Message{
+		err := msgModel.IncomingMessage(messaging.Message{
 			Text:            tgUpdate.Message.Text,
 			Command:         command,
 			Arguments:       arguments,
@@ -135,7 +135,7 @@ func ProcessingMessages(tgUpdate *tgbotapi.Update, c *Client, msgModel *messages
 			isCommand = true
 		}
 
-		err := msgModel.IncomingMessage(types.Message{
+		err := msgModel.IncomingMessage(messaging.Message{
 			Text:            tgUpdate.CallbackQuery.Data,
 			Command:         command,
 			Arguments:       arguments,
@@ -213,7 +213,7 @@ func deleteInlineButtons(c *Client, userID int64, msgID int) error {
 	return nil
 }
 
-func deleteMessage(c *Client, chatID int64, msgID int) error {
+/* func deleteMessage(c *Client, chatID int64, msgID int) error {
 	deleteConfig := tgbotapi.NewDeleteMessage(chatID, msgID)
 	_, err := c.Client.Send(deleteConfig)
 	if err != nil {
@@ -221,6 +221,32 @@ func deleteMessage(c *Client, chatID int64, msgID int) error {
 		logger.Error("Ошибка удаления сообщения", "err", err)
 		return errors.Wrap(err, "deleteMessage failed")
 	}
+	return nil
+} */
+
+func deleteMessage(c *Client, chatID int64, msgID int) error {
+	deleteConfig := tgbotapi.NewDeleteMessage(chatID, msgID)
+
+	// Используем Request вместо Send
+	resp, err := c.Client.Request(deleteConfig)
+	if err != nil {
+		logger.Error("Ошибка запроса на удаление сообщения", "err", err)
+		return errors.Wrap(err, "deleteMessage request failed")
+	}
+
+	// Проверяем, что API вернуло успешный статус
+	if !resp.Ok {
+		logger.Error("Telegram API вернул ошибку при удалении",
+			"error_code", resp.ErrorCode,
+			"description", resp.Description)
+		return errors.Errorf("deleteMessage failed: %s", resp.Description)
+	}
+
+	// Можно добавить проверку, что в результате пришло true,
+	// но обычно если Ok == true, то всё хорошо.
+	// Если нужно явно проверить:
+	// if resp.Result != true { ... }
+
 	return nil
 }
 

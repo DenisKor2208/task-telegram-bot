@@ -3,9 +3,9 @@ package commands
 import (
 	"fmt"
 
-	"github.com/DenisKor2208/task-telegram-bot/internal/models"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
-	"github.com/DenisKor2208/task-telegram-bot/internal/types"
 	"github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands"
 )
 
@@ -18,7 +18,7 @@ type StartCommand struct{}
 
 // Execute — реализация команды /start.
 // Отправляет приветственное сообщение с inline-кнопками пользователю.
-func (c *StartCommand) Execute(s types.Model, msg types.Message, session *models.UserSession) error {
+func (c *StartCommand) Execute(s command.Model, msg messaging.Message) error {
 	// Определяем отображаемое имя: сначала UserDisplayName, иначе UserName.
 	displayName := msg.UserDisplayName
 	if len(displayName) == 0 {

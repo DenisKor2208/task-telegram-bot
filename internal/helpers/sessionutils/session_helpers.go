@@ -2,92 +2,71 @@ package sessionutils
 
 import (
 	"context"
+	"maps"
 
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/service"
 	"github.com/DenisKor2208/task-telegram-bot/internal/models"
-	"github.com/DenisKor2208/task-telegram-bot/internal/types"
-	"github.com/pkg/errors"
 )
 
-// SetSessionTaskToken - устанавливает состояние токена задачи
+// update — общий helper для обновления сессии с последующим сохранением.
+// Принимает функцию, которая модифицирует сессию, и возвращает обновлённую сессию или ошибку.
+func update(
+	ctx context.Context,
+	sessionService service.Session,
+	userID int64,
+	updateFn func(*models.UserSession),
+) (*models.UserSession, error) {
+	session, err := sessionService.GetOrCreateSession(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	updateFn(session)
+	err = sessionService.SaveSession(ctx, session)
+	if err != nil {
+		return nil, err
+	}
+	return session, nil
+}
+
+// SetSessionTaskToken устанавливает токен задачи в сессии пользователя.
 func SetSessionTaskToken(
 	ctx context.Context,
-	sessionService types.SessionService,
+	sessionService service.Session,
 	userID int64,
-	command string,
+	taskToken string,
 ) (*models.UserSession, error) {
-
-	// 1. Загрузка существующей сессии
-	session, _ := sessionService.GetSession(ctx, userID)
-
-	session.State = command
-
-	err := sessionService.SaveSession(ctx, session)
-	session, _ = sessionService.GetSession(ctx, userID)
-	if err != nil {
-		return session, err
-	}
-
-	return session, nil
+	return update(ctx, sessionService, userID, func(s *models.UserSession) {
+		s.TaskToken = taskToken
+	})
 }
 
-// UpdateSessionData загружает текущую сессию пользователя, объединяет (мерджит)
-// предоставленные данные в поле Data и сохраняет сессию.
-// updateData - это карта, где ключи - это имена полей, а значения - новые данные для обновления.
+// UpdateSessionData объединяет (мерджит) переданные данные с полем Data сессии.
+// Если updateData пуст, возвращает текущую сессию без изменений (ошибки нет).
 func UpdateSessionData(
 	ctx context.Context,
-	sessionService types.SessionService,
-	msg types.Message,
-	updateData map[string]interface{},
+	sessionService service.Session,
+	userID int64,
+	updateData map[string]any,
 ) (*models.UserSession, error) {
-
-	// 1. Загрузка существующей сессии
-	session, _ := sessionService.GetSession(ctx, msg.UserID)
-
-	if updateData == nil || len(updateData) == 0 {
-		return session, errors.New("данные для обновления не могут быть пустыми")
+	if len(updateData) == 0 {
+		// Нет данных для обновления — просто возвращаем текущую сессию
+		return sessionService.GetOrCreateSession(ctx, userID)
 	}
-
-	// 2. Инициализация Data, если она nil (защита)
-	if session.Data == nil {
-		session.Data = make(map[string]interface{})
-	}
-
-	// 3. Объединение (Merge) новых данных с существующими.
-	// Новые ключи перезапишут старые, но остальные останутся.
-	for key, value := range updateData {
-		session.Data[key] = value
-	}
-
-	// 4. Сохранение обновленной сессии обратно в хранилище
-	err := sessionService.SaveSession(ctx, session)
-	session, _ = sessionService.GetSession(ctx, msg.UserID)
-	if err != nil {
-		return session, err
-	}
-
-	return session, nil
+	return update(ctx, sessionService, userID, func(s *models.UserSession) {
+		if s.Data == nil {
+			s.Data = make(map[string]any)
+		}
+		maps.Copy(s.Data, updateData)
+	})
 }
 
-// ClearSessionData загружает текущую сессию пользователя, очищает поле Data (устанавливает в пустую карту)
-// и сохраняет сессию.
+// ClearSessionData очищает поле Data сессии (устанавливает пустую карту).
 func ClearSessionData(
 	ctx context.Context,
-	sessionService types.SessionService,
+	sessionService service.Session,
 	userID int64,
 ) (*models.UserSession, error) {
-
-	// 1. Загрузка существующей сессии
-	session, _ := sessionService.GetSession(ctx, userID)
-
-	// 2. Очистка поля Data (устанавливаем в пустую карту)
-	session.Data = make(map[string]interface{})
-
-	// 3. Сохранение обновленной сессии обратно в хранилище
-	err := sessionService.SaveSession(ctx, session)
-	session, _ = sessionService.GetSession(ctx, userID)
-	if err != nil {
-		return session, err
-	}
-
-	return session, nil
+	return update(ctx, sessionService, userID, func(s *models.UserSession) {
+		s.Data = make(map[string]any)
+	})
 }

@@ -6,9 +6,10 @@ import (
 
 	"github.com/DenisKor2208/task-telegram-bot/internal/helpers/callbacktokenpayloadutils"
 	"github.com/DenisKor2208/task-telegram-bot/internal/helpers/sessionutils"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/bottypes"
 	"github.com/DenisKor2208/task-telegram-bot/internal/models"
-	"github.com/DenisKor2208/task-telegram-bot/internal/types"
 	btnedittaskbyid "github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands/edit_task"
 	"github.com/pkg/errors"
 )
@@ -16,14 +17,15 @@ import (
 // EditTaskByIdCommand - структура команды /edit_task_by_id
 type EditTaskByIdCommand struct{}
 
-func (c *EditTaskByIdCommand) Execute(s types.Model, msg types.Message, session *models.UserSession) error {
+func (c *EditTaskByIdCommand) Execute(s command.Model, msg messaging.Message) error {
 
 	var task *models.Task
 
-	// Парсим команду и аргументы
-	args, ok := session.Data["payload_task_id"].(int64)
-	if !ok {
-		return errors.New("Не удалось удалить задачу")
+	session, err := s.GetSessionService().GetOrCreateSession(s.GetCtx(), msg.UserID)
+
+	args, err := sessionutils.ExtractInt64FromSession(session, "payload_task_id")
+	if err != nil {
+		return err
 	}
 
 	// Проверяем, что аргументы являются числом
@@ -32,7 +34,7 @@ func (c *EditTaskByIdCommand) Execute(s types.Model, msg types.Message, session 
 	   		return errors.Wrap(err, "Не удалось удалить задачу")
 	   	} */
 
-	task, err := s.GetTaskStorage().GetTaskByID(s.GetCtx(), args)
+	task, err = s.GetTaskStorage().GetTaskByID(s.GetCtx(), args)
 	if err != nil {
 		return errors.Wrap(err, "Не удалось изменить статус задачи")
 	}

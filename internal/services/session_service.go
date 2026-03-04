@@ -37,33 +37,47 @@ func createSessionKey(userID int64) string {
 // SaveSession — сохраняет сессию в Redis
 func (s *SessionService) SaveSession(ctx context.Context, session *models.UserSession) error {
 	key := createSessionKey(session.UserID)
-
-	// Используем твой метод Set!
-	// Он сам превратит *UserSession в JSON.
-	// Используем TTL, который получили при инициализации.
-	return s.storage.Set(ctx, key, session, s.sessionTTL)
+	err := s.storage.Set(ctx, key, session, s.sessionTTL)
+	if err != nil {
+		return fmt.Errorf("save session for user %d: %w", session.UserID, err)
+	}
+	return nil
 }
 
 // GetSession — получает сессию из Redis
 func (s *SessionService) GetSession(ctx context.Context, userID int64) (*models.UserSession, error) {
 	key := createSessionKey(userID)
 
-	var session models.UserSession // Пустая структура, куда будем "разворачивать" JSON
+	var session models.UserSession
 
-	// Используем твой метод Get!
 	err := s.storage.Get(ctx, key, &session)
 	if err != nil {
-		if errors.Is(err, redis.Nil) {
-			// Это не ошибка, а нормальная ситуация.
-			// Создаем новую, пустую сессию для пользователя.
-			return &models.UserSession{UserID: userID, State: ""}, nil
-		}
-		// А вот это уже реальная ошибка (Redis отвалился, JSON не парсится и т.д.)
-		return nil, err
+		return nil, fmt.Errorf("get session for user %d: %w", userID, err)
 	}
-
-	// Все хорошо, сессия найдена и расшифрована
 	return &session, nil
+
+}
+
+// GetOrCreateSession — получает сессию или создаёт новую, если её нет.
+// Новая сессия сразу сохраняется в Redis с дефолтным TTL.
+func (s *SessionService) GetOrCreateSession(ctx context.Context, userID int64) (*models.UserSession, error) {
+	session, err := s.GetSession(ctx, userID)
+	if err == nil {
+		return session, nil
+	}
+	if !errors.Is(err, redis.Nil) {
+		return nil, err // реальная ошибка
+	}
+	// Сессия не найдена — создаём новую
+	newSession := &models.UserSession{
+		UserID:    userID,
+		TaskToken: "",
+		Data:      make(map[string]any),
+	}
+	if err := s.SaveSession(ctx, newSession); err != nil {
+		return nil, fmt.Errorf("failed to save new session for user %d: %w", userID, err)
+	}
+	return newSession, nil
 }
 
 // DeleteSession — удаляет сессию (например, при /stop)
@@ -97,14 +111,6 @@ func (s *SessionService) CreateCallbackToken(
 
 	payload.Expires = time.Now().Add(ttl).Unix()
 	key := fmt.Sprintf("cb:%s", token)
-	// data, _ := json.Marshal(payload)
-
-	// Таймаут 5 сек, если нет в контексте
-	/* 	if _, ok := ctx.Deadline(); !ok {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
-	} */
 
 	if err := s.storage.Set(ctx, key, payload, ttl); err != nil {
 		return "", err
@@ -119,13 +125,6 @@ func (s *SessionService) GetCallbackPayload(
 	token string,
 ) (*callbacktokenpayloadutils.CallbackTokenPayload, error) {
 	key := fmt.Sprintf("cb:%s", token)
-
-	// Устанавливаем таймаут, если контекст его не имеет (как и в других методах)
-	/* 	if _, ok := ctx.Deadline(); !ok {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
-	} */
 
 	var payload callbacktokenpayloadutils.CallbackTokenPayload
 	err := s.storage.GetDel(ctx, key, &payload)

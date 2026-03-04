@@ -113,7 +113,7 @@ func GetMap(ctx context.Context, db sqlx.ExtContext, query string, args ...any) 
 // Get выполняет запрос и сканирует результат в структуру dest.
 // dest должен быть указателем на структуру с тегами db, соответствующими столбцам запроса.
 // Возвращает ошибку, если запрос неудачен или строка не найдена (sql.ErrNoRows).
-func Get(ctx context.Context, db sqlx.ExtContext, dest interface{}, query string, args ...any) error {
+func Get(ctx context.Context, db sqlx.ExtContext, dest any, query string, args ...any) error {
 	row := db.QueryRowxContext(ctx, query, args...)
 	if row.Err() != nil {
 		return sqlErr(row.Err(), query, args...)

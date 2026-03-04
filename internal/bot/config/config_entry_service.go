@@ -7,26 +7,27 @@ import (
 	/* 	"github.com/DenisKor2208/task-telegram-bot/internal/helpers/sessionutils"
 	   	"github.com/DenisKor2208/task-telegram-bot/internal/logger"
 	   	"github.com/DenisKor2208/task-telegram-bot/internal/models" */
-	"github.com/DenisKor2208/task-telegram-bot/internal/types"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
+	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/service"
 	"github.com/pkg/errors"
 )
 
-// ConfigEntryService — сервис для работы с types.ConfigEntry и обработки сессий/команд.
+// ConfigEntryService — сервис для работы с service.ConfigEntry и обработки сессий/команд.
 type ConfigEntryService struct {
-	model  types.Model
-	config map[string]types.ConfigEntry
+	model  command.Model
+	config map[string]service.ConfigEntry
 	mu     sync.RWMutex
 }
 
 // NewConfigEntryService — конструктор сервиса.
 // Принимает зависимость model и начальную конфигурацию (может быть пустой map).
 // Валидирует конфиг и возвращает ошибку, если она некорректна.
-func NewConfigEntryService(model types.Model, initialConfig map[string]types.ConfigEntry) (*ConfigEntryService, error) {
+func NewConfigEntryService(model command.Model, initialConfig map[string]service.ConfigEntry) (*ConfigEntryService, error) {
 	if model == nil {
 		return nil, errors.New("model interface cannot be nil")
 	}
 	if initialConfig == nil {
-		initialConfig = make(map[string]types.ConfigEntry)
+		initialConfig = make(map[string]service.ConfigEntry)
 	}
 	/* 	if err := validateConfig(initialConfig); err != nil {
 		return nil, err
@@ -37,7 +38,7 @@ func NewConfigEntryService(model types.Model, initialConfig map[string]types.Con
 	}, nil
 }
 
-func (ces *ConfigEntryService) GetConfig() map[string]types.ConfigEntry {
+func (ces *ConfigEntryService) GetConfig() map[string]service.ConfigEntry {
 	ces.mu.RLock()
 	defer ces.mu.RUnlock()
 	return ces.config
@@ -45,7 +46,7 @@ func (ces *ConfigEntryService) GetConfig() map[string]types.ConfigEntry {
 
 // validateConfig проверяет корректность конфига.
 // Вызывается в конструкторе.
-func validateConfig(config map[string]types.ConfigEntry) error {
+func validateConfig(config map[string]service.ConfigEntry) error {
 	for key, entry := range config {
 		if entry.TargetCommand != "" && len(entry.CommandFields) > 0 {
 			return fmt.Errorf("config entry for key '%s' has both TargetCommand and CommandFields, which is invalid", key)
