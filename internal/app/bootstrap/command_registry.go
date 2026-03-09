@@ -7,7 +7,6 @@ import (
 	cmdclosedtask "github.com/DenisKor2208/task-telegram-bot/internal/commands/closed_task"
 	cmdcompletedtask "github.com/DenisKor2208/task-telegram-bot/internal/commands/completed_task"
 	cmddeletetask "github.com/DenisKor2208/task-telegram-bot/internal/commands/delete_task"
-	cmdedittasks "github.com/DenisKor2208/task-telegram-bot/internal/commands/edit_task"
 	cmdviewstasks "github.com/DenisKor2208/task-telegram-bot/internal/commands/views_tasks"
 )
 
@@ -30,20 +29,15 @@ func CommandRegistry() *commands.RegistryCommands {
 
 	// Удалить задачу
 	registry.RegisterCommand("delete_task", &commands.DeleteTaskCommand{})
-	registry.RegisterCommand("delete_task_by_id", &cmddeletetask.DeleteTaskByIdCommand{})
-
-	// Редактировать задачу
-	registry.RegisterCommand("edit_task", &commands.EditTaskCommand{})
-	registry.RegisterCommand("edit_task_by_id", &cmdedittasks.EditTaskByIdCommand{})
-	registry.RegisterCommand("update_task", &cmdedittasks.UpdateTaskCommand{})
+	registry.RegisterCommand("delete_task_by_id", &cmddeletetask.DeleteTaskByIDCommand{})
 
 	// Выполнить задачу
 	registry.RegisterCommand("completed_task", &commands.CompletedTaskCommand{})
-	registry.RegisterCommand("completed_task_by_id", &cmdcompletedtask.CompletedTaskByIdCommand{})
+	registry.RegisterCommand("completed_task_by_id", &cmdcompletedtask.CompletedTaskByIDCommand{})
 
 	// Завершить задачу
 	registry.RegisterCommand("closed_task", &commands.ClosedTaskCommand{})
-	registry.RegisterCommand("closed_task_by_id", &cmdclosedtask.ClosedTaskByIdCommand{})
+	registry.RegisterCommand("closed_task_by_id", &cmdclosedtask.ClosedTaskByIDCommand{})
 
 	return registry
 }

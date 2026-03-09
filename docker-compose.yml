@@ -12,6 +12,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_tgbot_task_data:/var/lib/postgresql/data
+    # healthcheck:
+    #   test: ["CMD-SHELL", "pg_isready -U tgbotadmin -d tgbot"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
 
   redis:
     container_name: redis_tgbot
@@ -21,6 +26,49 @@ services:
       - "6379:6379"
     volumes:
       - redis_tgbot_task_data:/data
+
+  # migrator:
+  #   build: .
+  #   container_name: tgbot_migrator
+  #   restart: "no"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   command: |
+  #     sh -c "
+  #       sleep 5 &&
+  #       go run cmd/migrator/main.go
+  #     "
+  #   environment:
+  #     - DB_HOST=postgres
+  #     - DB_PORT=5432
+  #     - DB_USER=tgbotadmin
+  #     - DB_PASSWORD=tgbotadminpass
+  #     - DB_NAME=tgbot
+  #   volumes:
+  #     - ./migrations:/migrations
+
+  # app:
+  #   build: .
+  #   container_name: tgbot_app
+  #   restart: always
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_started
+  #     migrator:
+  #       condition: service_completed_successfully
+  #   environment:
+  #     - DB_HOST=postgres
+  #     - DB_PORT=5432
+  #     - DB_USER=tgbotadmin
+  #     - DB_PASSWORD=tgbotadminpass
+  #     - DB_NAME=tgbot
+  #     - REDIS_ADDR=redis:6379
+  #     - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+  #   env_file:
+  #     - .env
 
 volumes:
   postgres_tgbot_task_data:

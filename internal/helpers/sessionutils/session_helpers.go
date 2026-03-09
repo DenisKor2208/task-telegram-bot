@@ -2,7 +2,6 @@ package sessionutils
 
 import (
 	"context"
-	"maps"
 
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/service"
 	"github.com/DenisKor2208/task-telegram-bot/internal/models"
@@ -40,8 +39,7 @@ func SetSessionTaskToken(
 	})
 }
 
-// UpdateSessionData объединяет (мерджит) переданные данные с полем Data сессии.
-// Если updateData пуст, возвращает текущую сессию без изменений (ошибки нет).
+// UpdateSessionData объединяет данные, при этом значения nil удаляют соответствующие ключи.
 func UpdateSessionData(
 	ctx context.Context,
 	sessionService service.Session,
@@ -49,14 +47,19 @@ func UpdateSessionData(
 	updateData map[string]any,
 ) (*models.UserSession, error) {
 	if len(updateData) == 0 {
-		// Нет данных для обновления — просто возвращаем текущую сессию
 		return sessionService.GetOrCreateSession(ctx, userID)
 	}
 	return update(ctx, sessionService, userID, func(s *models.UserSession) {
 		if s.Data == nil {
 			s.Data = make(map[string]any)
 		}
-		maps.Copy(s.Data, updateData)
+		for k, v := range updateData {
+			if v == nil {
+				delete(s.Data, k)
+			} else {
+				s.Data[k] = v
+			}
+		}
 	})
 }
 

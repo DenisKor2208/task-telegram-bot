@@ -2,39 +2,26 @@ package commands
 
 import (
 	"fmt"
-	"time"
 
-	"github.com/DenisKor2208/task-telegram-bot/internal/helpers/callbacktokenpayloadutils"
+	"github.com/DenisKor2208/task-telegram-bot/internal/commands/delete_task"
+	"github.com/DenisKor2208/task-telegram-bot/internal/helpers"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
-	"github.com/DenisKor2208/task-telegram-bot/internal/logger"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/bottypes"
-	"github.com/DenisKor2208/task-telegram-bot/internal/models"
 	"github.com/DenisKor2208/task-telegram-bot/internal/repositories"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
-	"github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands"
+	btndeletetask "github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands"
 	"github.com/pkg/errors"
-)
-
-const (
-	COMMAND_DELETE_TASKS = "/delete_task"
 )
 
 // DeleteTaskCommand - структура команды /delete_task - "Удалить задачу"
 type DeleteTaskCommand struct{}
 
+// Execute — реализация команды /delete_task.
+// Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *DeleteTaskCommand) Execute(s command.Model, msg messaging.Message) error {
+	displayName := helpers.GetDisplayName(msg)
 
-	var tasks []*models.Task
-	var err error
-
-	// Определяем отображаемое имя: сначала UserDisplayName, иначе UserName.
-	displayName := msg.UserDisplayName
-	if len(displayName) == 0 {
-		displayName = msg.UserName
-	}
-
-	// Формируем текст приветствия
 	text := fmt.Sprintf(resources.TXTDeleteTask, displayName)
 
 	statuses := []int{
@@ -44,57 +31,39 @@ func (c *DeleteTaskCommand) Execute(s command.Model, msg messaging.Message) erro
 		repositories.STATUS_CLOSED,
 	}
 
-	tasks, err = s.GetTaskStorage().GetTasksByStatusID(s.GetCtx(), statuses)
+	tasks, err := s.GetTaskStorage().GetTasksByStatusID(s.GetCtx(), statuses)
 	if err != nil {
 		return errors.Wrap(err, "Не удалось получить задачи")
 	}
 
-	// Инициализируем кнопки
 	var buttons []bottypes.TgRowButtons
-
-	// Инициализируем пустой срез для дополнительных кнопок
 	var additionalButtons []bottypes.TgRowButtons
 
-	// Добавляем кнопки для каждой задачи
 	for _, task := range tasks {
 		deadlineStr := task.Deadline.Format("02.01.2006 15:04")
-		/*		if task.Deadline.IsZero() {
-				deadlineStr = "Без дедлайна"
-			}*/
-
-		token, err := s.GetSessionService().CreateCallbackToken(
-			s.GetCtx(),
-			callbacktokenpayloadutils.CallbackTokenPayload{
-				Action: "delete_task_by_id",
-				TaskID: int64(task.ID),
-				UserID: msg.UserID,
-			},
-			10*time.Minute,
-		)
-		if err != nil {
-			logger.Error("Failed to create token", "err", err)
-			continue
+		if task.Deadline.IsZero() {
+			deadlineStr = "Без дедлайна"
 		}
 
-		// Создаём кнопку для задачи
 		button := bottypes.TgInlineButton{
 			DisplayName: fmt.Sprintf("%s (до %s)", task.Description, deadlineStr),
-			// Value:       fmt.Sprintf("/delete_task_by_id %d", task.ID),
-			Value: token,
+			Value:       fmt.Sprintf("/delete_task_by_id %d", task.ID),
 		}
-
-		// Добавляем как новый ряд
 		additionalButtons = append(additionalButtons, bottypes.TgRowButtons{button})
 	}
 
-	// Формируем общий список кнопок c дополнительными и базовыми кнопками
 	buttons = append(buttons, additionalButtons...)
-	buttons = append(buttons, commands.BtnDeleteTask...)
-
-	// Добавляем кнопку "Назад"
-	lastCommand := s.GetLastUserCommand(msg.UserID)
-	_ = lastCommand
+	buttons = append(buttons, btndeletetask.BtnDeleteTask...)
 
 	return s.GetTgClient().ShowInlineButtons(text, buttons, msg.UserID)
+}
 
+// NextStep Следующая команда
+func (c *DeleteTaskCommand) NextStep() command.Command {
+	return &delete_task.DeleteTaskByIDCommand{}
+}
+
+// InputField Поле для сохранения данных
+func (c *DeleteTaskCommand) InputField() string {
+	return ""
 }

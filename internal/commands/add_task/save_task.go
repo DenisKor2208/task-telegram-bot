@@ -1,11 +1,12 @@
+// Package add_task
 package add_task
 
 import (
 	"time"
 
+	"github.com/DenisKor2208/task-telegram-bot/internal/helpers"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
-	"github.com/DenisKor2208/task-telegram-bot/internal/model/messages"
 	"github.com/DenisKor2208/task-telegram-bot/internal/models"
 	"github.com/DenisKor2208/task-telegram-bot/internal/repositories"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
@@ -16,9 +17,14 @@ import (
 // SaveTaskCommand - структура команды /save_task
 type SaveTaskCommand struct{}
 
+// Execute — реализация команды /save_task.
+// Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error {
 
 	session, err := s.GetSessionService().GetOrCreateSession(s.GetCtx(), msg.UserID)
+	if err != nil {
+		return errors.Wrap(err, "не удалось сохранить задачу")
+	}
 
 	// Проверяем наличие аргументов только в сессии
 	var argsText string
@@ -32,7 +38,7 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 	}
 
 	// Теперь парсим аргументы из сессии
-	taskDesc, taskDate, ok := messages.ParseForCommandSaveTask(argsText)
+	taskDesc, taskDate, ok := helpers.ParseForCommandSaveTask(argsText)
 	if !ok {
 		return errors.New("Не удалось сохранить задачу")
 	}
@@ -79,11 +85,16 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 		return errors.Wrap(err, "Не удалось сохранить задачу")
 	}
 
-	// _ = s.GetSessionService().DeleteSession(s.GetCtx(), msg.UserID)
-	//if err != nil {
-	//	return errors.Wrap(err, "Не удалось сохранить задачу")
-	//}
-
 	return s.GetTgClient().ShowInlineButtons(resources.TXTSaveTask, commands.BtnSaveTask, msg.UserID)
 
+}
+
+// NextStep Следующая команда
+func (c *SaveTaskCommand) NextStep() command.Command {
+	return nil
+}
+
+// InputField Поле для сохранения данных
+func (c *SaveTaskCommand) InputField() string {
+	return ""
 }

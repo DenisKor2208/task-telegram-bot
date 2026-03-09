@@ -21,7 +21,7 @@ tasks:
       - docker compose build
 
   # Запуск Docker Compose сервисов в фоновом режиме
-  run:
+  up:
     desc: Run Docker Compose services in detached mode
     cmds:
       - docker compose up -d

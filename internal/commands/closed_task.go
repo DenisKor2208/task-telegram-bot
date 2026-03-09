@@ -2,37 +2,27 @@ package commands
 
 import (
 	"fmt"
-	"time"
 
-	"github.com/DenisKor2208/task-telegram-bot/internal/helpers/callbacktokenpayloadutils"
+	"github.com/DenisKor2208/task-telegram-bot/internal/commands/closed_task"
+	"github.com/DenisKor2208/task-telegram-bot/internal/helpers"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
-	"github.com/DenisKor2208/task-telegram-bot/internal/logger"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/bottypes"
-	"github.com/DenisKor2208/task-telegram-bot/internal/models"
 	"github.com/DenisKor2208/task-telegram-bot/internal/repositories"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
-	"github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands"
+	btnclosedtask "github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands"
 	"github.com/pkg/errors"
-)
-
-const (
-	COMMAND_CLOSED_TASKS = "/closed_task"
 )
 
 // ClosedTaskCommand - структура команды /closed_task - "Завершить задачу"
 type ClosedTaskCommand struct{}
 
+// Execute — реализация команды /closed_task.
+// Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *ClosedTaskCommand) Execute(s command.Model, msg messaging.Message) error {
 
-	var tasks []*models.Task
-	var err error
-
 	// Определяем отображаемое имя: сначала UserDisplayName, иначе UserName.
-	displayName := msg.UserDisplayName
-	if len(displayName) == 0 {
-		displayName = msg.UserName
-	}
+	displayName := helpers.GetDisplayName(msg)
 
 	// Формируем текст приветствия
 	text := fmt.Sprintf(resources.TXTClosedTask, displayName)
@@ -44,7 +34,7 @@ func (c *ClosedTaskCommand) Execute(s command.Model, msg messaging.Message) erro
 		// repositories.STATUS_CLOSED,
 	}
 
-	tasks, err = s.GetTaskStorage().GetTasksByStatusID(s.GetCtx(), statuses)
+	tasks, err := s.GetTaskStorage().GetTasksByStatusID(s.GetCtx(), statuses)
 	if err != nil {
 		return errors.Wrap(err, "Не удалось получить задачи")
 	}
@@ -58,28 +48,13 @@ func (c *ClosedTaskCommand) Execute(s command.Model, msg messaging.Message) erro
 	// Добавляем кнопки для каждой задачи
 	for _, task := range tasks {
 		deadlineStr := task.Deadline.Format("02.01.2006 15:04")
-		/*		if task.Deadline.IsZero() {
-				deadlineStr = "Без дедлайна"
-			}*/
-
-		// Создаём кнопку для задачи
-		token, err := s.GetSessionService().CreateCallbackToken(
-			s.GetCtx(),
-			callbacktokenpayloadutils.CallbackTokenPayload{
-				Action: "closed_task_by_id",
-				TaskID: int64(task.ID),
-				UserID: msg.UserID,
-			},
-			10*time.Minute,
-		)
-		if err != nil {
-			logger.Error("Failed to create token", "err", err)
-			continue
+		if task.Deadline.IsZero() {
+			deadlineStr = "Без дедлайна"
 		}
 
 		button := bottypes.TgInlineButton{
 			DisplayName: fmt.Sprintf("%s (до %s)", task.Description, deadlineStr),
-			Value:       token,
+			Value:       fmt.Sprintf("/closed_task_by_id %d", task.ID),
 		}
 
 		// Добавляем как новый ряд
@@ -88,8 +63,18 @@ func (c *ClosedTaskCommand) Execute(s command.Model, msg messaging.Message) erro
 
 	// Формируем общий список кнопок с дополнительными и базовыми кнопками
 	buttons = append(buttons, additionalButtons...)
-	buttons = append(buttons, commands.BtnClosedTask...)
+	buttons = append(buttons, btnclosedtask.BtnClosedTask...)
 
 	return s.GetTgClient().ShowInlineButtons(text, buttons, msg.UserID)
 
+}
+
+// NextStep Следующая команда
+func (c *ClosedTaskCommand) NextStep() command.Command {
+	return &closed_task.ClosedTaskByIDCommand{}
+}
+
+// InputField Поле для сохранения данных
+func (c *ClosedTaskCommand) InputField() string {
+	return "title"
 }

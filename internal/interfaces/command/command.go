@@ -10,6 +10,7 @@ import (
 
 // Command — интерфейс для всех команд бота.
 type Command interface {
+	//Execute - Основная логика команды
 	Execute(Model, messaging.Message) error
 }
 
@@ -22,8 +23,5 @@ type Model interface {
 	GetUserStorage() storage.User
 	GetStatusStorage() storage.Status
 	GetTaskStorage() storage.Task
-	GetLastUserCommand(int64) string
-	SetLastUserCommand(int64, string)
 	GetSessionService() service.Session
-	GetConfigEntryService() service.ConfigEntryService
 }

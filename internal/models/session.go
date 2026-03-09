@@ -1,3 +1,4 @@
+// Package models
 package models
 
 // UserSession представляет собой сессию пользователя.

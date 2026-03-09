@@ -26,3 +26,13 @@ func (r *RegistryCommands) GetCommand(name string) (command.Command, bool) {
 	cmd, exists := r.commands[name]
 	return cmd, exists
 }
+
+// AllCommands возвращает все зарегистрированные команды.
+// Нужно для поиска callback-обработчиков.
+func (r *RegistryCommands) AllCommands() []command.Command {
+	cmds := make([]command.Command, 0, len(r.commands))
+	for _, cmd := range r.commands {
+		cmds = append(cmds, cmd)
+	}
+	return cmds
+}

@@ -1,14 +1,12 @@
+// Package services
 package services
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 
 	"fmt"
 	"time"
 
-	"github.com/DenisKor2208/task-telegram-bot/internal/helpers/callbacktokenpayloadutils"
 	"github.com/DenisKor2208/task-telegram-bot/internal/models"
 	"github.com/DenisKor2208/task-telegram-bot/internal/repositories"
 	"github.com/pkg/errors"
@@ -85,73 +83,4 @@ func (s *SessionService) DeleteSession(ctx context.Context, userID int64) error 
 	key := createSessionKey(userID)
 	_, err := s.storage.Del(ctx, key) // `Del` возвращает (int64, error)
 	return err
-}
-
-/*********TOKEN**********/
-
-// GenerateToken — создаёт случайный токен из 8 символов
-func (s *SessionService) GenerateToken() (string, error) {
-	b := make([]byte, 4) // 4 байта = 8 hex-символов
-	if _, err := rand.Read(b); err != nil {
-		return "", fmt.Errorf("generate random: %w", err)
-	}
-	return hex.EncodeToString(b), nil
-}
-
-// CreateCallbackToken — создаёт токен и сохраняет в Redis
-func (s *SessionService) CreateCallbackToken(
-	ctx context.Context,
-	payload callbacktokenpayloadutils.CallbackTokenPayload,
-	ttl time.Duration,
-) (string, error) {
-	token, err := s.GenerateToken()
-	if err != nil {
-		return "", err
-	}
-
-	payload.Expires = time.Now().Add(ttl).Unix()
-	key := fmt.Sprintf("cb:%s", token)
-
-	if err := s.storage.Set(ctx, key, payload, ttl); err != nil {
-		return "", err
-	}
-
-	return token, nil
-}
-
-// GetCallbackPayload — получает и удаляет токен (одноразовый)
-func (s *SessionService) GetCallbackPayload(
-	ctx context.Context,
-	token string,
-) (*callbacktokenpayloadutils.CallbackTokenPayload, error) {
-	key := fmt.Sprintf("cb:%s", token)
-
-	var payload callbacktokenpayloadutils.CallbackTokenPayload
-	err := s.storage.GetDel(ctx, key, &payload)
-	if err == redis.Nil {
-		return nil, fmt.Errorf("token expired or used")
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	// Проверяем, не истёк ли токен (если поле Expires задано)
-	if time.Now().Unix() > payload.Expires {
-		return nil, fmt.Errorf("token expired")
-	}
-
-	return &payload, nil
-}
-
-// IsCallbackToken — проверяет, похожа ли строка на токен (8 hex-символов)
-func (s *SessionService) IsCallbackToken(token string) bool {
-	if len(token) != 8 {
-		return false
-	}
-	for _, c := range token {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
-			return false
-		}
-	}
-	return true
 }

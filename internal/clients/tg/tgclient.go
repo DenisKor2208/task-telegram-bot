@@ -1,12 +1,15 @@
+// Package tg
 package tg
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
+	"github.com/DenisKor2208/task-telegram-bot/internal/helpers"
 	"github.com/DenisKor2208/task-telegram-bot/internal/logger"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/messages"
+	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
+	"github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/pkg/errors"
 
@@ -82,73 +85,78 @@ func (c *Client) ListenUpdates(msgModel *messages.Model) {
 
 // ProcessingMessages функция обработки сообщений.
 func ProcessingMessages(tgUpdate *tgbotapi.Update, c *Client, msgModel *messages.Model) {
+	deleteMsg := func(chatID int64, msgID int) {
+		if err := deleteInlineButtons(c, chatID, msgID); err != nil {
+			logger.Error("Ошибка удаления кнопок:", "err", err)
+		}
+		if err := deleteMessage(c, chatID, msgID); err != nil {
+			logger.Error("Ошибка удаления сообщения:", "err", err)
+		}
+	}
+
+	parseMessage := func(text string, msg *messaging.Message) {
+		if strings.HasPrefix(text, "/") {
+			cmd, args := helpers.ParseCommandAndArgs(text)
+			msg.IsCommand = true
+			msg.Command = cmd
+			msg.Arguments = args
+		}
+	}
+
 	if tgUpdate.Message != nil {
 		// Пользователь написал текстовое сообщение.
 		logger.Info(fmt.Sprintf("[%s][%v] %s", tgUpdate.Message.From.UserName, tgUpdate.Message.From.ID, tgUpdate.Message.Text))
 
-		isCommand := false
-		command, arguments := parseCommandAndArgs(tgUpdate.Message.Text)
-		if command != "" {
-			isCommand = true
-		}
-
-		err := msgModel.IncomingMessage(messaging.Message{
+		msg := messaging.Message{
 			Text:            tgUpdate.Message.Text,
-			Command:         command,
-			Arguments:       arguments,
-			IsCommand:       isCommand,
 			UserID:          tgUpdate.Message.From.ID,
 			UserName:        tgUpdate.Message.From.UserName,
 			UserDisplayName: strings.TrimSpace(tgUpdate.Message.From.FirstName + " " + tgUpdate.Message.From.LastName),
 			Date:            int64(tgUpdate.Message.Date),
-		})
-		if err != nil {
+			/**/
+			Arguments: strings.TrimSpace(tgUpdate.Message.Text),
+		}
+
+		// Удаление кнопок и сообщения
+		deleteMsg(msg.UserID, tgUpdate.Message.MessageID)
+
+		// Определяем, команда ли это
+		parseMessage(msg.Text, &msg)
+
+		if err := msgModel.IncomingMessage(msg); err != nil {
+			_ = c.ShowInlineButtons(resources.TXTStart, commands.BtnOther, msg.UserID)
+
 			logger.Error("error processing message:", "err", err)
 		}
 	} else if tgUpdate.CallbackQuery != nil {
 		// Пользователь нажал кнопку.
 		logger.Info(fmt.Sprintf("[%s][%v] Callback: %s", tgUpdate.CallbackQuery.From.UserName, tgUpdate.CallbackQuery.From.ID, tgUpdate.CallbackQuery.Data))
+
 		callback := tgbotapi.NewCallback(tgUpdate.CallbackQuery.ID, tgUpdate.CallbackQuery.Data)
 		if _, err := c.Client.Request(callback); err != nil {
 			logger.Error("Ошибка Request callback:", "err", err)
 		}
 
-		if err := deleteInlineButtons(c, tgUpdate.CallbackQuery.From.ID, tgUpdate.CallbackQuery.Message.MessageID); err != nil {
-			logger.Error("Ошибка удаления кнопок:", "err", err)
-		}
+		// Удаление кнопок и сообщения
+		deleteMsg(tgUpdate.CallbackQuery.From.ID, tgUpdate.CallbackQuery.Message.MessageID)
 
-		if err := deleteMessage(c, tgUpdate.CallbackQuery.From.ID, tgUpdate.CallbackQuery.Message.MessageID); err != nil {
-			logger.Error("Ошибка удаления кнопок:", "err", err)
-		}
-
-		// buttonText := tgUpdate.CallbackQuery.Data
-		// parts := strings.Fields(strings.TrimPrefix(buttonText, "/"))
-		// command, arguments, isCommand := "", "", strings.HasPrefix(buttonText, "/")
-		// if isCommand && len(parts) > 0 {
-		// 	command = parts[0]
-		// 	arguments = strings.Join(parts[1:], " ")
-		// }
-
-		isCommand := false
-		command, arguments := parseCommandAndArgs(tgUpdate.CallbackQuery.Data)
-		if command != "" {
-			isCommand = true
-		}
-
-		err := msgModel.IncomingMessage(messaging.Message{
+		msg := messaging.Message{
 			Text:            tgUpdate.CallbackQuery.Data,
-			Command:         command,
-			Arguments:       arguments,
-			IsCommand:       isCommand,
 			UserID:          tgUpdate.CallbackQuery.From.ID,
 			UserName:        tgUpdate.CallbackQuery.From.UserName,
 			UserDisplayName: strings.TrimSpace(tgUpdate.CallbackQuery.From.FirstName + " " + tgUpdate.CallbackQuery.From.LastName),
 			IsCallback:      true,
 			CallbackMsgID:   tgUpdate.CallbackQuery.InlineMessageID,
 			Date:            int64(tgUpdate.CallbackQuery.Message.Date),
-		})
-		if err != nil {
-			logger.Error("error processing message from callback:", "err", err)
+		}
+
+		// Определяем, команда ли это
+		parseMessage(msg.Text, &msg)
+
+		if err := msgModel.IncomingMessage(msg); err != nil {
+			_ = c.ShowInlineButtons(resources.TXTStart, commands.BtnOther, msg.UserID)
+
+			logger.Error("error processing callback:", "err", err)
 		}
 	}
 }
@@ -213,17 +221,6 @@ func deleteInlineButtons(c *Client, userID int64, msgID int) error {
 	return nil
 }
 
-/* func deleteMessage(c *Client, chatID int64, msgID int) error {
-	deleteConfig := tgbotapi.NewDeleteMessage(chatID, msgID)
-	_, err := c.Client.Send(deleteConfig)
-	if err != nil {
-		// Обработка ошибок (например, сообщение слишком старое или уже удалено)
-		logger.Error("Ошибка удаления сообщения", "err", err)
-		return errors.Wrap(err, "deleteMessage failed")
-	}
-	return nil
-} */
-
 func deleteMessage(c *Client, chatID int64, msgID int) error {
 	deleteConfig := tgbotapi.NewDeleteMessage(chatID, msgID)
 
@@ -242,32 +239,5 @@ func deleteMessage(c *Client, chatID int64, msgID int) error {
 		return errors.Errorf("deleteMessage failed: %s", resp.Description)
 	}
 
-	// Можно добавить проверку, что в результате пришло true,
-	// но обычно если Ok == true, то всё хорошо.
-	// Если нужно явно проверить:
-	// if resp.Result != true { ... }
-
 	return nil
-}
-
-func parseCommandAndArgs(input string) (command string, args string) {
-	trimmedInput := strings.TrimSpace(input)
-
-	if trimmedInput == "" {
-		return "", ""
-	}
-
-	//re := regexp.MustCompile(`^/([^\s]+)(?:\s+(.*))?`) // старый
-	re := regexp.MustCompile(`^/([^\s]+)\s*(.*)`) // новый
-	matches := re.FindStringSubmatch(trimmedInput)
-
-	if len(matches) > 0 {
-		command = strings.TrimSpace(matches[1])
-		args = strings.TrimSpace(matches[2])
-	} else {
-		command = ""
-		args = trimmedInput
-	}
-
-	return command, args
 }

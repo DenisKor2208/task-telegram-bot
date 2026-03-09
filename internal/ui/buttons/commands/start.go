@@ -8,7 +8,7 @@ var BtnStart = []bottypes.TgRowButtons{
 	{bottypes.TgInlineButton{DisplayName: "Добавить задачу", Value: "/add_task"}},
 	{bottypes.TgInlineButton{DisplayName: "Просмотреть задачи", Value: "/view_tasks"}},
 	{bottypes.TgInlineButton{DisplayName: "Удалить задачу", Value: "/delete_task"}},
-	{bottypes.TgInlineButton{DisplayName: "Редактировать задачу", Value: "/edit_task"}},
+	// {bottypes.TgInlineButton{DisplayName: "Редактировать задачу", Value: "/edit_task"}},
 	{bottypes.TgInlineButton{DisplayName: "Выполнить задачу", Value: "/completed_task"}},
 	{bottypes.TgInlineButton{DisplayName: "Завершить задачу", Value: "/closed_task"}},
 }

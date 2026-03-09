@@ -1,3 +1,4 @@
+// Package sessionutils
 package sessionutils
 
 import (

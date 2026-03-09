@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/DenisKor2208/task-telegram-bot/internal/app/bootstrap"
-	configCommands "github.com/DenisKor2208/task-telegram-bot/internal/bot/config"
 	"github.com/DenisKor2208/task-telegram-bot/internal/clients/tg"
 	"github.com/DenisKor2208/task-telegram-bot/internal/commands"
 	"github.com/DenisKor2208/task-telegram-bot/internal/config"
@@ -21,18 +20,17 @@ import (
 // Содержит все зависимости и сервисы, необходимые для работы бота.
 // Инициализируется через NewApp() и используется для запуска слушателя обновлений.
 type App struct {
-	cfg                *config.Service
-	tgClient           *tg.Client
-	dbConn             *sqlx.DB
-	redisClient        *redisutils.RedisClient
-	registry           *commands.RegistryCommands
-	userStorage        *repositories.UserStorage
-	statusStorage      *repositories.StatusStorage
-	taskStorage        *repositories.TaskStorage
-	sessionService     *services.SessionService
-	configEntryService *configCommands.ConfigEntryService
-	msgModel           *messages.Model
-	storages           *bootstrap.Storages
+	cfg            *config.Service
+	tgClient       *tg.Client
+	dbConn         *sqlx.DB
+	redisClient    *redisutils.RedisClient
+	registry       *commands.RegistryCommands
+	userStorage    *repositories.UserStorage
+	statusStorage  *repositories.StatusStorage
+	taskStorage    *repositories.TaskStorage
+	sessionService *services.SessionService
+	msgModel       *messages.Model
+	storages       *bootstrap.Storages
 }
 
 // NewApp создаёт и инициализирует новое приложение.
@@ -97,12 +95,6 @@ func NewApp(ctx context.Context) (*App, error) {
 		app.registry,
 		app.sessionService,
 	)
-
-	//
-	app.configEntryService, err = bootstrap.ConfigEntryService(app.msgModel)
-	if err != nil {
-		logger.Fatal("Failed to init ConfigEntryService", "err", err)
-	}
 
 	return app, nil
 }
