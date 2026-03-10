@@ -38,6 +38,9 @@ func main() {
 	// Запускаем проверку просроченных задач
 	go app.overdueChecker.Start(ctx)
 
+	// Запускаем уведомления
+	go app.deadlineNotifier.Start(ctx)
+
 	// Ждём сигнала завершения
 	<-ctx.Done()
 

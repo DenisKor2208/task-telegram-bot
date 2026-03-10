@@ -179,3 +179,17 @@ func (ts *TaskStorage) UpdateOverdueTasks(ctx context.Context) (int64, error) {
 	}
 	return result.RowsAffected()
 }
+
+// GetTasksForNotification возвращает только задачи, которые потенциально могут требовать уведомлений (активные, с будущим дедлайном)
+func (ts *TaskStorage) GetTasksForNotification(ctx context.Context) ([]*models.Task, error) {
+	var tasks []*models.Task
+	query := `SELECT * FROM tasks 
+              WHERE deadline > NOW() 
+                AND status_id NOT IN ($1, $2, $3) 
+              ORDER BY deadline`
+	err := dbutils.Select(ctx, ts.db, &tasks, query, StatusOverdue, StatusClosed, StatusCompleted)
+	if err != nil {
+		return nil, fmt.Errorf("GetTasksForNotification: %w", err)
+	}
+	return tasks, nil
+}

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/DenisKor2208/task-telegram-bot/internal/helpers/dbutils"
@@ -35,17 +36,28 @@ func (us *UserStorage) GetUserByTgID(ctx context.Context, userID int) (*models.U
 	return &user, nil
 }
 
-/*
-// GetAllUsers retrieves all users from the database.
-func (us *UserStorage) GetAllUsers() ([]models.User, error) {
-	var users []models.User
-	err := us.db.Select(&users, "SELECT id, tg_id, name, created_at, updated_at FROM users ORDER BY id")
+// GetAllUsers возвращает всех пользователей с пагинацией.
+// limit — максимальное количество записей, offset — смещение.
+func (us *UserStorage) GetAllUsers(ctx context.Context, limit, offset int) ([]*models.User, error) {
+	var users []*models.User
+	query := `SELECT id, tg_id, name, created_at, updated_at FROM users ORDER BY id LIMIT $1 OFFSET $2`
+	err := dbutils.Select(ctx, us.db, &users, query, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetAllUsers: %w", err)
 	}
 	return users, nil
 }
-*/
+
+// GetUserByID возвращает пользователя по его ID (первичный ключ).
+func (us *UserStorage) GetUserByID(ctx context.Context, userID int) (*models.User, error) {
+	var user models.User
+	const sqlString = `SELECT id, tg_id, name, created_at, updated_at FROM users WHERE id = $1`
+	err := dbutils.Get(ctx, us.db, &user, sqlString, userID)
+	if err != nil {
+		return nil, fmt.Errorf("GetUserByID: %w", err)
+	}
+	return &user, nil
+}
 
 // CreateUser inserts a new user into the database. Assumes TgID, Name are provided; CreatedAt and UpdatedAt can be set to now.
 func (us *UserStorage) CreateUser(ctx context.Context, user *models.User) (*models.User, error) {

@@ -12,4 +12,5 @@ ConnectionStringDB: "host=localhost port=5432 dbname=tgbot user=tgbotadmin passw
 #  port: 44044
 #  timeout: 10h
 
-#overdue_check_interval: 60  # проверка раз в минуту
+#overdue_check_interval: 60  # проверка просроченных задач для смены статуса: раз в минуту
+#notification_check_interval: 300 # проверка для отправки уведомлений: раз в 5 минут

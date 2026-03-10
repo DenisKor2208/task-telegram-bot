@@ -21,18 +21,21 @@ import (
 // Содержит все зависимости и сервисы, необходимые для работы бота.
 // Инициализируется через NewApp() и используется для запуска слушателя обновлений.
 type App struct {
-	cfg            *config.Service
-	tgClient       *tg.Client
-	dbConn         *sqlx.DB
-	redisClient    *redisutils.RedisClient
-	registry       *commands.RegistryCommands
-	userStorage    *repositories.UserStorage
-	statusStorage  *repositories.StatusStorage
-	taskStorage    *repositories.TaskStorage
-	sessionService *services.SessionService
-	msgModel       *messages.Model
-	storages       *bootstrap.Storages
-	overdueChecker *services.OverdueChecker
+	cfg                     *config.Service
+	tgClient                *tg.Client
+	dbConn                  *sqlx.DB
+	redisClient             *redisutils.RedisClient
+	registry                *commands.RegistryCommands
+	userStorage             *repositories.UserStorage
+	statusStorage           *repositories.StatusStorage
+	taskStorage             *repositories.TaskStorage
+	sessionService          *services.SessionService
+	msgModel                *messages.Model
+	storages                *bootstrap.Storages
+	overdueChecker          *services.OverdueChecker
+	notificationTypeStorage *repositories.NotificationTypeStorage
+	taskNotificationStorage *repositories.TaskNotificationStorage
+	deadlineNotifier        *services.DeadlineNotifier
 }
 
 // NewApp создаёт и инициализирует новое приложение.
@@ -83,6 +86,16 @@ func NewApp(ctx context.Context) (*App, error) {
 	app.userStorage = app.storages.UserStorage
 	app.statusStorage = app.storages.StatusStorage
 	app.taskStorage = app.storages.TaskStorage
+	app.notificationTypeStorage = bootstrap.NotificationTypeStorage(app.dbConn)
+	app.taskNotificationStorage = bootstrap.TaskNotificationStorage(app.dbConn)
+	app.deadlineNotifier = bootstrap.DeadlineNotifier(
+		app.cfg,
+		app.taskStorage,
+		app.userStorage,
+		app.notificationTypeStorage,
+		app.taskNotificationStorage,
+		app.tgClient,
+	)
 
 	// Создаём OverdueChecker
 	app.overdueChecker = bootstrap.OverdueChecker(app.cfg, app.taskStorage)
