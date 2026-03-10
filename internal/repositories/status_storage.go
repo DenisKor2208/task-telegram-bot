@@ -26,13 +26,13 @@ func NewStatusStorage(db *sqlx.DB) *StatusStorage {
 }
 
 // GetStatusByID
-func (ss *StatusStorage) GetStatusByID(ctx context.Context, statusId int) (*models.Status, error) {
+func (ss *StatusStorage) GetStatusByID(ctx context.Context, statusID int) (*models.Status, error) {
 	var status models.Status
 
 	const sqlString = `SELECT * FROM statuses WHERE id = $1`
 
 	// Выполнение запроса на получение данных.
-	err := dbutils.Get(ctx, ss.db, &status, sqlString, statusId)
+	err := dbutils.Get(ctx, ss.db, &status, sqlString, statusID)
 	if err != nil {
 		return nil, err
 	}

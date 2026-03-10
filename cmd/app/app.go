@@ -1,3 +1,4 @@
+// Package main
 package main
 
 import (
@@ -31,6 +32,7 @@ type App struct {
 	sessionService *services.SessionService
 	msgModel       *messages.Model
 	storages       *bootstrap.Storages
+	overdueChecker *services.OverdueChecker
 }
 
 // NewApp создаёт и инициализирует новое приложение.
@@ -81,6 +83,9 @@ func NewApp(ctx context.Context) (*App, error) {
 	app.userStorage = app.storages.UserStorage
 	app.statusStorage = app.storages.StatusStorage
 	app.taskStorage = app.storages.TaskStorage
+
+	// Создаём OverdueChecker
+	app.overdueChecker = bootstrap.OverdueChecker(app.cfg, app.taskStorage)
 
 	// Создаёт сервис управления сессиями.
 	app.sessionService = bootstrap.SessionService(app.redisClient)

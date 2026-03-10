@@ -165,3 +165,17 @@ func (ts *TaskStorage) UpdateTask(ctx context.Context, task *models.Task) error 
 
 	return nil
 }
+
+// UpdateOverdueTasks обновляет статус задач, у которых дедлайн в прошлом и статус не "Просрочено".
+// Возвращает количество обновлённых строк.
+func (ts *TaskStorage) UpdateOverdueTasks(ctx context.Context) (int64, error) {
+	const overdueStatus = StatusOverdue
+	query := `UPDATE tasks 
+						SET status_id = $1, updated_at = NOW() 
+            WHERE deadline < NOW() AND status_id != $1`
+	result, err := ts.db.ExecContext(ctx, query, overdueStatus)
+	if err != nil {
+		return 0, fmt.Errorf("failed to update overdue tasks: %w", err)
+	}
+	return result.RowsAffected()
+}

@@ -35,6 +35,9 @@ func main() {
 	// Запускаем Telegram-клиент
 	go app.tgClient.ListenUpdates(app.msgModel)
 
+	// Запускаем проверку просроченных задач
+	go app.overdueChecker.Start(ctx)
+
 	// Ждём сигнала завершения
 	<-ctx.Done()
 

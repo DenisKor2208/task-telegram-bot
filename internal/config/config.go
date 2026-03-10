@@ -17,10 +17,11 @@ type RedisConfig struct {
 }
 
 type Config struct {
-	Env                string      `yaml:"env" env-default:"local"` // Текущий окружение
-	APIBotToken        string      `yaml:"api_telegram_token"`      // Токен бота в телеграме
-	ConnectionStringDB string      `yaml:"ConnectionStringDB"`      // Строка подключения в базе данных.
-	Redis              RedisConfig `yaml:"redis"`
+	Env                  string      `yaml:"env" env-default:"local"` // Текущий окружение
+	APIBotToken          string      `yaml:"api_telegram_token"`      // Токен бота в телеграме
+	ConnectionStringDB   string      `yaml:"ConnectionStringDB"`      // Строка подключения в базе данных.
+	Redis                RedisConfig `yaml:"redis"`
+	OverdueCheckInterval int         `yaml:"overdue_check_interval" env-default:"60"` // в секундах
 }
 
 type Service struct {

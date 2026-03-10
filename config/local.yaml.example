@@ -11,3 +11,5 @@ ConnectionStringDB: "host=localhost port=5432 dbname=tgbot user=tgbotadmin passw
 #grpc:
 #  port: 44044
 #  timeout: 10h
+
+#overdue_check_interval: 60  # проверка раз в минуту
