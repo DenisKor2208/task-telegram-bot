@@ -20,7 +20,7 @@ type FilterClosedCommand struct{}
 // Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *FilterClosedCommand) Execute(s command.Model, msg messaging.Message) error {
 
-	statuses := []int{repositories.STATUS_CLOSED}
+	statuses := []int{repositories.StatusClosed}
 	tasks, err := s.GetTaskStorage().GetTasksByStatusID(s.GetCtx(), statuses)
 	if err != nil {
 		return errors.Wrap(err, "Не удалось получить задачи")

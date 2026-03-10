@@ -29,10 +29,10 @@ func (c *CompletedTaskCommand) Execute(s command.Model, msg messaging.Message) e
 	text := fmt.Sprintf(resources.TXTCompletedTask, displayName)
 
 	statuses := []int{
-		repositories.STATUS_IN_PROGRESS,
-		//repositories.STATUS_COMPLETED,
-		repositories.STATUS_OVERDUE,
-		repositories.STATUS_CLOSED,
+		repositories.StatusInProgress,
+		//repositories.StatusCompleted,
+		repositories.StatusOverdue,
+		repositories.StatusClosed,
 	}
 
 	tasks, err := s.GetTaskStorage().GetTasksByStatusID(s.GetCtx(), statuses)

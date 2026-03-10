@@ -52,10 +52,10 @@ func (ts *TaskStorage) GetAllTasks(ctx context.Context) ([]*models.Task, error) 
 func (ts *TaskStorage) GetTasksByStatusID(ctx context.Context, statusIDs []int) ([]*models.Task, error) {
 	if len(statusIDs) == 0 {
 		statusIDs = []int{
-			STATUS_IN_PROGRESS,
-			STATUS_COMPLETED,
-			STATUS_OVERDUE,
-			STATUS_CLOSED,
+			StatusInProgress,
+			StatusCompleted,
+			StatusOverdue,
+			StatusClosed,
 		}
 	}
 

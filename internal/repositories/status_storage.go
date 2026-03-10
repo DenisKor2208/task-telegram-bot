@@ -9,10 +9,10 @@ import (
 )
 
 const (
-	STATUS_IN_PROGRESS = 1 // Статус "В процессе"
-	STATUS_COMPLETED   = 2 // Статус "Выполнено"
-	STATUS_OVERDUE     = 3 // Статус "Просрочено"
-	STATUS_CLOSED      = 4 // Статус "Завершено"
+	StatusInProgress = 1 // Статус "В процессе"
+	StatusCompleted  = 2 // Статус "Выполнено"
+	StatusOverdue    = 3 // Статус "Просрочено"
+	StatusClosed     = 4 // Статус "Завершено"
 )
 
 // StatusStorage represents storage for statuses

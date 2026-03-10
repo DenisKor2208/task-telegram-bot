@@ -42,7 +42,7 @@ func (c *CompletedTaskByIDCommand) Execute(s command.Model, msg messaging.Messag
 		return errors.Wrap(err, "Не удалось изменить статус задачи")
 	}
 
-	task.StatusID = repositories.STATUS_COMPLETED
+	task.StatusID = repositories.StatusCompleted
 	task.UpdatedAt = time.Now()
 
 	err = s.GetTaskStorage().UpdateTask(s.GetCtx(), task)

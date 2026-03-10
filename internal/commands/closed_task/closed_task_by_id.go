@@ -39,7 +39,7 @@ func (c *ClosedTaskByIDCommand) Execute(s command.Model, msg messaging.Message) 
 		return errors.Wrap(err, "Не удалось изменить статус задачи")
 	}
 
-	task.StatusID = repositories.STATUS_CLOSED
+	task.StatusID = repositories.StatusClosed
 	task.UpdatedAt = time.Now()
 
 	err = s.GetTaskStorage().UpdateTask(s.GetCtx(), task)

@@ -20,7 +20,7 @@ type FilterOverdueCommand struct{}
 // Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *FilterOverdueCommand) Execute(s command.Model, msg messaging.Message) error {
 
-	statuses := []int{repositories.STATUS_OVERDUE}
+	statuses := []int{repositories.StatusOverdue}
 
 	tasks, err := s.GetTaskStorage().GetTasksByStatusID(s.GetCtx(), statuses)
 	if err != nil {

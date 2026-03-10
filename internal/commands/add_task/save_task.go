@@ -7,6 +7,7 @@ import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/helpers"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
+	"github.com/DenisKor2208/task-telegram-bot/internal/logger"
 	"github.com/DenisKor2208/task-telegram-bot/internal/models"
 	"github.com/DenisKor2208/task-telegram-bot/internal/repositories"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
@@ -63,13 +64,9 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 		return errors.Wrap(err, "не удалось сохранить задачу")
 	}
 
-	// Назначаем задаче статус "В процессе"
-	statusInProgress := repositories.STATUS_IN_PROGRESS
-
 	// Формируем модель задачи
 	task := &models.Task{
 		Description: taskDesc,
-		StatusID:    statusInProgress,
 		UserID:      createdUser.ID,
 		CreatedAt:   timestamp,
 		UpdatedAt:   timestamp,
@@ -77,7 +74,18 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 
 	if taskDate != "" {
 		layout := "02.01.2006 15:04"
-		task.Deadline, _ = time.Parse(layout, taskDate)
+		deadline, err := time.Parse(layout, taskDate)
+		if err != nil {
+			logger.Warn("Не удалось распарсить дедлайн, будет проигнорирован", "date", taskDate, "error", err)
+		} else {
+			task.Deadline = deadline
+		}
+	}
+
+	// Определяем статус задачи на основе дедлайна
+	task.StatusID = repositories.StatusInProgress
+	if task.Deadline.Before(time.Now()) {
+		task.StatusID = repositories.StatusOverdue
 	}
 
 	_, err = s.GetTaskStorage().CreateTask(s.GetCtx(), task)
