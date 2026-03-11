@@ -25,7 +25,7 @@ func NewUserStorage(db *sqlx.DB) *UserStorage {
 func (us *UserStorage) GetUserByTgID(ctx context.Context, userID int) (*models.User, error) {
 	var user models.User
 
-	const sqlString = `SELECT id, tg_id, name, created_at, updated_at FROM users WHERE tg_id = $1`
+	const sqlString = `SELECT * FROM users WHERE tg_id = $1`
 
 	// Выполнение запроса на получение данных.
 	err := dbutils.Get(ctx, us.db, &user, sqlString, userID)
@@ -68,8 +68,8 @@ func (us *UserStorage) CreateUser(ctx context.Context, user *models.User) (*mode
 	}
 
 	const sqlString = `
-        INSERT INTO users (tg_id, name, created_at, updated_at) 
-        VALUES (:tg_id, :name, :created_at, :updated_at)
+				INSERT INTO users (tg_id, name, timezone, created_at, updated_at) 
+				VALUES (:tg_id, :name, :timezone, :created_at, :updated_at)
     `
 
 	now := time.Now()
@@ -78,6 +78,10 @@ func (us *UserStorage) CreateUser(ctx context.Context, user *models.User) (*mode
 	}
 	if user.UpdatedAt.IsZero() {
 		user.UpdatedAt = now
+	}
+
+	if user.Timezone == "" {
+		user.Timezone = "UTC"
 	}
 
 	// Выполняем вставку
@@ -93,6 +97,16 @@ func (us *UserStorage) CreateUser(ctx context.Context, user *models.User) (*mode
 	}
 
 	return createdUser, nil
+}
+
+// UpdateUserTimezone обновляет часовой пояс пользователя.
+func (us *UserStorage) UpdateUserTimezone(ctx context.Context, userID int, timezone string) error {
+	const sqlString = `UPDATE users SET timezone = $1, updated_at = NOW() WHERE id = $2`
+	_, err := us.db.ExecContext(ctx, sqlString, timezone, userID)
+	if err != nil {
+		return fmt.Errorf("UpdateUserTimezone: %w", err)
+	}
+	return nil
 }
 
 /*

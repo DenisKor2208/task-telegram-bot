@@ -1,3 +1,4 @@
+// Package delete_task
 package delete_task
 
 import "github.com/DenisKor2208/task-telegram-bot/internal/model/bottypes"

@@ -54,6 +54,7 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 	user := &models.User{
 		TgID:      int(msg.UserID),
 		Name:      msg.UserName,
+		Timezone:  "UTC",
 		CreatedAt: timestamp,
 		UpdatedAt: timestamp,
 	}
@@ -62,6 +63,14 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 	createdUser, err := s.GetUserStorage().CreateUser(s.GetCtx(), user)
 	if err != nil {
 		return errors.Wrap(err, "не удалось сохранить задачу")
+	}
+
+	// Загружаем часовой пояс пользователя
+	loc, err := time.LoadLocation(createdUser.Timezone)
+	if err != nil {
+		logger.Warn("Не удалось загрузить часовой пояс, используется UTC",
+			"user_id", createdUser.ID, "timezone", createdUser.Timezone, "error", err)
+		loc = time.UTC
 	}
 
 	// Формируем модель задачи
@@ -74,17 +83,18 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 
 	if taskDate != "" {
 		layout := "02.01.2006 15:04"
-		deadline, err := time.Parse(layout, taskDate)
+		parsed, err := time.ParseInLocation(layout, taskDate, loc)
 		if err != nil {
 			logger.Warn("Не удалось распарсить дедлайн, будет проигнорирован", "date", taskDate, "error", err)
 		} else {
-			task.Deadline = deadline
+			task.Deadline = parsed.UTC()
 		}
 	}
 
 	// Определяем статус задачи на основе дедлайна
+	nowUTC := time.Now().UTC()
 	task.StatusID = repositories.StatusInProgress
-	if task.Deadline.Before(time.Now()) {
+	if task.Deadline.Before(nowUTC) {
 		task.StatusID = repositories.StatusOverdue
 	}
 

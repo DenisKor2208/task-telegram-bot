@@ -8,5 +8,8 @@ import (
 
 type User interface {
 	GetUserByTgID(context.Context, int) (*models.User, error)
+	GetAllUsers(context.Context, int, int) ([]*models.User, error)
+	GetUserByID(context.Context, int) (*models.User, error)
 	CreateUser(context.Context, *models.User) (*models.User, error)
+	UpdateUserTimezone(context.Context, int, string) error
 }

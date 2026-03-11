@@ -113,8 +113,18 @@ func (n *DeadlineNotifier) sendNotification(ctx context.Context, task *models.Ta
 		return
 	}
 
-	deadlineStr := task.Deadline.Format("02.01.2006 15:04")
-	text := fmt.Sprintf("🔔 Напоминание: %s\nДедлайн: %s\n⏰ %s", task.Description, deadlineStr, nt.Name)
+	// Загружаем локацию пользователя
+	loc, err := time.LoadLocation(user.Timezone)
+	if err != nil {
+		logger.Warn("DeadlineNotifier: не удалось загрузить часовой пояс, используется UTC", "user_id", user.ID, "timezone", user.Timezone)
+		loc = time.UTC
+	}
+
+	// Преобразуем время дедлайна в локальное время пользователя
+	deadlineLocal := task.Deadline.In(loc)
+	deadlineStr := deadlineLocal.Format("02.01.2006 15:04")
+
+	text := fmt.Sprintf("🔔 Напоминание: %s\nДедлайн: %s (%s)\n⏰ %s", task.Description, deadlineStr, user.Timezone, nt.Name)
 
 	if err := n.tgClient.SendMessage(text, int64(user.TgID)); err != nil {
 		logger.Error("DeadlineNotifier: ошибка отправки сообщения", "user_id", user.TgID, "error", err)
