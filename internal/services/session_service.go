@@ -13,6 +13,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const (
+	SessionKeyPrefix = "session:%d"
+)
+
 // SessionService который работает с сессиями
 type SessionService struct {
 	storage    *repositories.RedisStorage
@@ -29,7 +33,7 @@ func NewSessionService(storage *repositories.RedisStorage, defaultTTL time.Durat
 
 // createSessionKey — хелпер для генерации ключа
 func createSessionKey(userID int64) string {
-	return fmt.Sprintf("session:%d", userID)
+	return fmt.Sprintf(SessionKeyPrefix, userID)
 }
 
 // SaveSession — сохраняет сессию в Redis

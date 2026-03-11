@@ -1,13 +1,13 @@
-// Package commands
-package commands
+// Package settimezone
+package settimezone
 
 import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/bottypes"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
 )
 
-// BtnSettingsViewAll Команды стартовых действий.
-var BtnSettingsViewAll = []bottypes.TgRowButtons{
+// BtnSetTimezoneConfirm Команды при удалении задачи
+var BtnSetTimezoneConfirm = []bottypes.TgRowButtons{
 	{bottypes.TgInlineButton{DisplayName: resources.BtnMainMenu, Value: "/start"}},
 	{bottypes.TgInlineButton{DisplayName: resources.BtnSettings, Value: "/settings_action"}},
 }

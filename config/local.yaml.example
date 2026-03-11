@@ -5,6 +5,11 @@ api_telegram_token: "XXX:XXXX"
 # Строка подключения к базе данных.
 ConnectionStringDB: "host=localhost port=5432 dbname=tgbot user=tgbotadmin password=tgbotadminpass sslmode=disable"
 
+redis:
+  # Строка подключения к Redis.
+  redis_connection_string: "redis://localhost:6379"
+  # Время жизни сессии в секундах(3600 = 1 час).
+  redis_session_ttl: 3600
 
 #storage_path: "./storage/sso.db"
 #token_ttl: 1h
@@ -12,5 +17,5 @@ ConnectionStringDB: "host=localhost port=5432 dbname=tgbot user=tgbotadmin passw
 #  port: 44044
 #  timeout: 10h
 
-#overdue_check_interval: 60  # проверка просроченных задач для смены статуса: раз в минуту
-#notification_check_interval: 300 # проверка для отправки уведомлений: раз в 5 минут
+overdue_check_interval: 60  # проверка просроченных задач для смены статуса: раз в минуту
+notification_check_interval: 300 # проверка для отправки уведомлений: раз в 5 минут

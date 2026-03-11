@@ -1,14 +1,16 @@
+// Package bootstrap
 package bootstrap
 
 import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/commands"
+	"github.com/DenisKor2208/task-telegram-bot/internal/repositories"
 
-	cmdaddtask "github.com/DenisKor2208/task-telegram-bot/internal/commands/add_task"
+	cmdaddtask "github.com/DenisKor2208/task-telegram-bot/internal/commands/addtask"
 	cmdclosedtask "github.com/DenisKor2208/task-telegram-bot/internal/commands/closed_task"
 	cmdcompletedtask "github.com/DenisKor2208/task-telegram-bot/internal/commands/completed_task"
 	cmddeletetask "github.com/DenisKor2208/task-telegram-bot/internal/commands/delete_task"
 	cmdsettimezone "github.com/DenisKor2208/task-telegram-bot/internal/commands/set_timezone"
-	cmdviewstasks "github.com/DenisKor2208/task-telegram-bot/internal/commands/views_tasks"
+	cmdviewstasks "github.com/DenisKor2208/task-telegram-bot/internal/commands/viewstasks"
 )
 
 // CommandRegistry создаёт и наполняет реестр команд.
@@ -28,11 +30,26 @@ func CommandRegistry() *commands.RegistryCommands {
 
 	// Просмотреть задачи
 	registry.RegisterCommand("view_tasks", &commands.ViewTasksCommand{})
-	registry.RegisterCommand("filter_all", &cmdviewstasks.FilterAllCommand{})
-	registry.RegisterCommand("filter_in_progress", &cmdviewstasks.FilterInProgressCommand{})
-	registry.RegisterCommand("filter_completed", &cmdviewstasks.FilterCompletedCommand{})
-	registry.RegisterCommand("filter_overdue", &cmdviewstasks.FilterOverdueCommand{})
-	registry.RegisterCommand("filter_closed", &cmdviewstasks.FilterClosedCommand{})
+	registry.RegisterCommand("filter_all", &cmdviewstasks.BaseFilterCommand{
+		Statuses:    nil, // все статусы
+		ResourceKey: "filter_all",
+	})
+	registry.RegisterCommand("filter_in_progress", &cmdviewstasks.BaseFilterCommand{
+		Statuses:    []int{repositories.StatusInProgress},
+		ResourceKey: "filter_in_progress",
+	})
+	registry.RegisterCommand("filter_completed", &cmdviewstasks.BaseFilterCommand{
+		Statuses:    []int{repositories.StatusCompleted},
+		ResourceKey: "filter_completed",
+	})
+	registry.RegisterCommand("filter_overdue", &cmdviewstasks.BaseFilterCommand{
+		Statuses:    []int{repositories.StatusOverdue},
+		ResourceKey: "filter_overdue",
+	})
+	registry.RegisterCommand("filter_closed", &cmdviewstasks.BaseFilterCommand{
+		Statuses:    []int{repositories.StatusClosed},
+		ResourceKey: "filter_closed",
+	})
 
 	// Удалить задачу
 	registry.RegisterCommand("delete_task", &commands.DeleteTaskCommand{})

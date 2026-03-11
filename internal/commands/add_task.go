@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/DenisKor2208/task-telegram-bot/internal/commands/add_task"
+	"github.com/DenisKor2208/task-telegram-bot/internal/commands/addtask"
 	"github.com/DenisKor2208/task-telegram-bot/internal/helpers"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
@@ -32,7 +32,7 @@ func (c *AddTaskCommand) Prompt(ctx context.Context, model command.Model, msg me
 
 // NextStep Следующая команда
 func (c *AddTaskCommand) NextStep() command.Command {
-	return &add_task.SaveTaskCommand{}
+	return &addtask.SaveTaskCommand{}
 }
 
 // InputField Поле для сохранения данных

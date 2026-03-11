@@ -26,7 +26,7 @@ func NewStatusStorage(db *sqlx.DB) *StatusStorage {
 	return &StatusStorage{db: db}
 }
 
-// GetStatusByID
+// GetStatusByID получить статус по ID
 func (ss *StatusStorage) GetStatusByID(ctx context.Context, statusID int) (*models.Status, error) {
 	var status models.Status
 

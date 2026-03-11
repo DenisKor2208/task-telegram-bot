@@ -72,23 +72,36 @@ func (n *DeadlineNotifier) checkDeadlines(ctx context.Context) {
 		logger.Error("DeadlineNotifier: не удалось получить задачи", "error", err)
 		return
 	}
+	if len(tasks) == 0 {
+		return
+	}
 
-	now := time.Now()
+	// Собираем ID задач для массового запроса
+	taskIDs := make([]int, 0, len(tasks))
+	for _, task := range tasks {
+		taskIDs = append(taskIDs, task.ID)
+	}
+
+	// Получаем мапу отправленных уведомлений для всех задач одним запросом
+	sentMap, err := n.taskNotifStorage.GetSentMapForTasks(ctx, taskIDs)
+	if err != nil {
+		logger.Error("DeadlineNotifier: не удалось получить отправленные уведомления", "error", err)
+		// Продолжаем, но для задач без данных sentMap будет пусто
+	}
+
+	// Рекомендуется использовать UTC для единообразия с хранимыми временами
+	now := time.Now().UTC()
 
 	for _, task := range tasks {
 		// Получаем уже отправленные типы для этой задачи
-		sentTypes, err := n.taskNotifStorage.GetSentTypesForTask(ctx, task.ID)
-		if err != nil {
-			logger.Error("DeadlineNotifier: ошибка получения отправленных уведомлений", "task_id", task.ID, "error", err)
-			continue
-		}
-		sentMap := make(map[int]bool, len(sentTypes))
-		for _, id := range sentTypes {
-			sentMap[id] = true
+		sentForTask := sentMap[task.ID] // если ключа нет, вернётся nil
+		sent := make(map[int]bool, len(sentForTask))
+		for _, id := range sentForTask {
+			sent[id] = true
 		}
 
 		for _, nt := range notifTypes {
-			if sentMap[nt.ID] {
+			if sent[nt.ID] {
 				continue
 			}
 
@@ -97,7 +110,7 @@ func (n *DeadlineNotifier) checkDeadlines(ctx context.Context) {
 			if !now.Before(notifyTime) {
 				// Отправляем
 				n.sendNotification(ctx, task, nt)
-				// Записываем факт отправки (игнорируем дубликат)
+				// Записываем факт отправки (дубликаты игнорируются на уровне БД)
 				if err := n.taskNotifStorage.Insert(ctx, task.ID, nt.ID); err != nil {
 					logger.Error("DeadlineNotifier: не удалось записать отправку", "task_id", task.ID, "type_id", nt.ID, "error", err)
 				}

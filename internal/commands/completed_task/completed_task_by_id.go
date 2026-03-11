@@ -12,7 +12,7 @@ import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/models"
 	"github.com/DenisKor2208/task-telegram-bot/internal/repositories"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
-	btncompletedtaskbyid "github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands/completed_task"
+	btncompletedtaskbyid "github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands/completedtask"
 	"github.com/pkg/errors"
 )
 
@@ -34,12 +34,12 @@ func (c *CompletedTaskByIDCommand) Execute(s command.Model, msg messaging.Messag
 
 	taskID, err := strconv.ParseInt(msg.Arguments, 10, 64)
 	if err != nil {
-		return s.GetTgClient().SendMessage("Неверный ID задачи", msg.UserID)
+		return s.GetTgClient().SendMessage(resources.ErrInvalidTaskID, msg.UserID)
 	}
 
 	task, err = s.GetTaskStorage().GetTaskByID(s.GetCtx(), taskID)
 	if err != nil {
-		return errors.Wrap(err, "Не удалось изменить статус задачи")
+		return errors.Wrap(err, resources.ErrFailedToUpdateTask)
 	}
 
 	task.StatusID = repositories.StatusCompleted

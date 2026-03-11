@@ -1,4 +1,5 @@
-package views_tasks
+// Package viewstasks
+package viewstasks
 
 import (
 	"fmt"
@@ -7,21 +8,27 @@ import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/bottypes"
-	"github.com/DenisKor2208/task-telegram-bot/internal/repositories"
+	"github.com/DenisKor2208/task-telegram-bot/internal/models"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
-	btnviewstasks "github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands/views_tasks"
+	btnbasefilter "github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands/viewstasks"
 	"github.com/pkg/errors"
 )
 
-// FilterCompletedCommand - структура команды /filter_completed
-type FilterCompletedCommand struct{}
+// BaseFilterCommand - общая команда для фильтрации задач по статусам.
+type BaseFilterCommand struct {
+	Statuses    []int  // список статусов
+	ResourceKey string // ключ для получения текста из resources.FilterTexts
+}
 
-// Execute — реализация команды /filter_completed.
-// Отправляет приветственное сообщение с inline-кнопками пользователю.
-func (c *FilterCompletedCommand) Execute(s command.Model, msg messaging.Message) error {
+func (c *BaseFilterCommand) Execute(s command.Model, msg messaging.Message) error {
+	var tasks []*models.Task
+	var err error
 
-	statuses := []int{repositories.StatusCompleted}
-	tasks, err := s.GetTaskStorage().GetTasksByStatusID(s.GetCtx(), statuses)
+	if len(c.Statuses) == 0 {
+		tasks, err = s.GetTaskStorage().GetAllTasks(s.GetCtx())
+	} else {
+		tasks, err = s.GetTaskStorage().GetTasksByStatusID(s.GetCtx(), c.Statuses)
+	}
 	if err != nil {
 		return errors.Wrap(err, "Не удалось получить задачи")
 	}
@@ -39,35 +46,24 @@ func (c *FilterCompletedCommand) Execute(s command.Model, msg messaging.Message)
 			DisplayName: fmt.Sprintf("%s (до %s)", task.Description, deadlineStr),
 			Value:       fmt.Sprintf("/view_tasks %d", task.ID),
 		}
-
 		taskButtons = append(taskButtons, bottypes.TgRowButtons{button})
 	}
 
 	buttons = append(buttons, taskButtons...)
-	buttons = append(buttons, btnviewstasks.BtnFilterCompleted...)
+	buttons = append(buttons, btnbasefilter.BtnBaseFilter...)
 
-	// Добавляем кнопку "Назад"
-	lastCommand := "view_tasks"
-	buttons = append(
-		buttons,
-		bottypes.TgRowButtons{
-			{DisplayName: actionBack, Value: "/" + lastCommand},
-		})
-
-	// Определяем отображаемое имя: сначала UserDisplayName, иначе UserName.
 	displayName := helpers.GetDisplayName(msg)
-	text := fmt.Sprintf(resources.TXTFilterCompleted, displayName)
+	text := fmt.Sprintf(resources.TXTFilterAll, displayName)
 
 	return s.GetTgClient().ShowInlineButtons(text, buttons, msg.UserID)
-
 }
 
 // NextStep Следующая команда
-func (c *FilterCompletedCommand) NextStep() command.Command {
+func (c *BaseFilterCommand) NextStep() command.Command {
 	return nil
 }
 
 // InputField Поле для сохранения данных
-func (c *FilterCompletedCommand) InputField() string {
+func (c *BaseFilterCommand) InputField() string {
 	return ""
 }

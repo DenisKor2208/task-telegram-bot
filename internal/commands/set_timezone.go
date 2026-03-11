@@ -16,8 +16,8 @@ type SetTimezoneCommand struct{}
 
 // timezoneOptions - предопределённый список часовых поясов с отображаемыми названиями.
 var timezoneOptions = []struct {
-	Display string // то, что видит пользователь (например, "Москва (MSK)")
-	Value   string // ID (например, "Europe/Moscow")
+	Display string
+	Value   string
 }{
 	{"Москва (MSK)", "Europe/Moscow"},
 	{"Санкт-Петербург (MSK)", "Europe/Moscow"},
@@ -31,7 +31,6 @@ var timezoneOptions = []struct {
 	{"Владивосток (UTC+10)", "Asia/Vladivostok"},
 	{"Магадан (UTC+11)", "Asia/Magadan"},
 	{"Камчатка (UTC+12)", "Asia/Kamchatka"},
-	// Добавьте другие регионы при необходимости
 }
 
 func (c *SetTimezoneCommand) Execute(s command.Model, msg messaging.Message) error {

@@ -21,13 +21,13 @@ func NewTaskStorage(db *sqlx.DB) *TaskStorage {
 }
 
 // GetTaskByID - returns task by tg id
-func (ts *TaskStorage) GetTaskByID(ctx context.Context, taskId int64) (*models.Task, error) {
+func (ts *TaskStorage) GetTaskByID(ctx context.Context, taskID int64) (*models.Task, error) {
 	var task models.Task
 
 	const sqlString = `SELECT * FROM tasks WHERE id = $1`
 
 	// Выполнение запроса на получение данных.
-	err := dbutils.Get(ctx, ts.db, &task, sqlString, taskId)
+	err := dbutils.Get(ctx, ts.db, &task, sqlString, taskID)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (ts *TaskStorage) GetTaskByID(ctx context.Context, taskId int64) (*models.T
 func (ts *TaskStorage) GetAllTasks(ctx context.Context) ([]*models.Task, error) {
 	var tasks []*models.Task
 
-	const sqlString = `SELECT * FROM tasks`
+	const sqlString = `SELECT * FROM tasks ORDER BY deadline NULLS LAST, created_at`
 
 	err := dbutils.Select(ctx, ts.db, &tasks, sqlString)
 	if err != nil {
@@ -61,7 +61,7 @@ func (ts *TaskStorage) GetTasksByStatusID(ctx context.Context, statusIDs []int) 
 
 	var tasks []*models.Task
 
-	const sqlString = `SELECT * FROM tasks WHERE status_id IN (?)`
+	const sqlString = `SELECT * FROM tasks WHERE status_id IN (?) ORDER BY deadline NULLS LAST, created_at`
 
 	// Подготавливаем запрос
 	query, args, err := sqlx.In(sqlString, statusIDs)

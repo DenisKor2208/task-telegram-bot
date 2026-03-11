@@ -1,5 +1,5 @@
-// Package add_task
-package add_task
+// Package addtask
+package addtask
 
 import (
 	"time"
@@ -24,7 +24,7 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 
 	session, err := s.GetSessionService().GetOrCreateSession(s.GetCtx(), msg.UserID)
 	if err != nil {
-		return errors.Wrap(err, "не удалось сохранить задачу")
+		return errors.Wrap(err, resources.ErrFailedToSaveTask)
 	}
 
 	// Проверяем наличие аргументов только в сессии
@@ -41,12 +41,12 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 	// Теперь парсим аргументы из сессии
 	taskDesc, taskDate, ok := helpers.ParseForCommandSaveTask(argsText)
 	if !ok {
-		return errors.New("Не удалось сохранить задачу")
+		return errors.New(resources.ErrFailedToSaveTask)
 	}
 
 	// Если описание задачи пустое
 	if taskDesc == "" {
-		return errors.New("Описание задачи отсутствует")
+		return errors.New(resources.ErrTaskDescriptionEmpty)
 	}
 
 	// Формируем модель пользователя
@@ -62,7 +62,7 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 	// Сохраняем пользователя
 	createdUser, err := s.GetUserStorage().CreateUser(s.GetCtx(), user)
 	if err != nil {
-		return errors.Wrap(err, "не удалось сохранить задачу")
+		return errors.Wrap(err, resources.ErrFailedToSaveTask)
 	}
 
 	// Загружаем часовой пояс пользователя
@@ -100,7 +100,7 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 
 	_, err = s.GetTaskStorage().CreateTask(s.GetCtx(), task)
 	if err != nil {
-		return errors.Wrap(err, "Не удалось сохранить задачу")
+		return errors.Wrap(err, resources.ErrFailedToSaveTask)
 	}
 
 	return s.GetTgClient().ShowInlineButtons(resources.TXTSaveTask, commands.BtnSaveTask, msg.UserID)

@@ -1,3 +1,4 @@
+// Package resources
 package resources
 
 const (
@@ -21,4 +22,28 @@ const (
 	TXTClosedTask               = "<b>%v</b> выберите задачу для пометки <b>Завершено</b>:"
 	TXTUpdateTask               = "Задача успешно обновлена"
 	TXTUnknownCommand           = "К сожалению, данная команда мне неизвестна. Для начала работы введите /start"
+)
+
+// FilterTexts сопоставляет ключи команд фильтрации с соответствующими текстовыми константами.
+var FilterTexts = map[string]string{
+	"filter_all":         TXTFilterAll,
+	"filter_in_progress": TXTFilterInProgress,
+	"filter_completed":   TXTFilterCompleted,
+	"filter_overdue":     TXTFilterOverdue,
+	"filter_closed":      TXTFilterClosed,
+}
+
+// Ошибки
+const (
+	ErrInvalidTaskID          = "Неверный ID задачи"
+	ErrTaskNotFound           = "Задача не найдена"
+	ErrFailedToUpdateTask     = "Не удалось изменить статус задачи"
+	ErrFailedToDeleteTask     = "Не удалось удалить задачу"
+	ErrFailedToSaveTask       = "Не удалось сохранить задачу"
+	ErrTaskDescriptionEmpty   = "Описание задачи отсутствует"
+	ErrArgumentsNotFound      = "Аргументы не найдены или некорректны"
+	ErrFailedToGetUser        = "Не удалось получить пользователя"
+	ErrFailedToUpdateTimezone = "Не удалось сохранить настройки. Попробуйте позже."
+	ErrInvalidTimezone        = "Некорректный часовой пояс. Пожалуйста, попробуйте ещё раз."
+	ErrSessionDataMissing     = "Данные сессии отсутствуют"
 )

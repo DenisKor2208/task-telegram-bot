@@ -9,7 +9,7 @@ import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/bottypes"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
-	btndeletetaskbyid "github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands/delete_task"
+	btndeletetaskbyid "github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands/deletetask"
 )
 
 // DeleteTaskByIDCommand - структура команды /delete_task_by_id
@@ -28,7 +28,7 @@ func (c *DeleteTaskByIDCommand) Execute(s command.Model, msg messaging.Message) 
 
 	taskID, err := strconv.ParseInt(msg.Arguments, 10, 64)
 	if err != nil {
-		return s.GetTgClient().SendMessage("Неверный ID задачи", msg.UserID)
+		return s.GetTgClient().SendMessage(resources.ErrInvalidTaskID, msg.UserID)
 	}
 
 	err = s.GetTaskStorage().DeleteTaskByID(s.GetCtx(), taskID)
