@@ -2,7 +2,7 @@
 env: "local"
 
 # Токен бота в телеграме
-api_telegram_token: "${TELEGRAM_TOKEN}"
+api_telegram_token: "XXX-XXX"
 
 # Строка подключения к PostgreSQL (локально)
 connection_string_db: "host=localhost port=5432 dbname=tgbot user=tgbotadmin password=tgbotadminpass sslmode=disable"
