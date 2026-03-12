@@ -11,11 +11,5 @@ redis:
   # Время жизни сессии в секундах(3600 = 1 час).
   redis_session_ttl: 3600
 
-#storage_path: "./storage/sso.db"
-#token_ttl: 1h
-#grpc:
-#  port: 44044
-#  timeout: 10h
-
 overdue_check_interval: 60  # проверка просроченных задач для смены статуса: раз в минуту
 notification_check_interval: 300 # проверка для отправки уведомлений: раз в 5 минут
