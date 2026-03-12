@@ -19,7 +19,6 @@ import (
 type CompletedTaskCommand struct{}
 
 // Execute — реализация команды /completed_task.
-// Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *CompletedTaskCommand) Execute(s command.Model, msg messaging.Message) error {
 
 	// Определяем отображаемое имя: сначала UserDisplayName, иначе UserName.

@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/DenisKor2208/task-telegram-bot/internal/logger"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {

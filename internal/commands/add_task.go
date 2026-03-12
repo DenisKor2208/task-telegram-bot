@@ -15,7 +15,6 @@ import (
 type AddTaskCommand struct{}
 
 // Execute — реализация команды /add_task.
-// Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *AddTaskCommand) Execute(s command.Model, msg messaging.Message) error {
 	return c.Prompt(s.GetCtx(), s, msg)
 }

@@ -17,11 +17,9 @@ import (
 )
 
 // CompletedTaskByIDCommand - структура команды /completed_task_by_id
-// Команда для выполнения задачи по ID.
 type CompletedTaskByIDCommand struct{}
 
 // Execute — реализация команды /completed_task_by_id.
-// Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *CompletedTaskByIDCommand) Execute(s command.Model, msg messaging.Message) error {
 
 	var task *models.Task

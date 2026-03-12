@@ -5,7 +5,7 @@ import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
 )
 
-// BtnViewTasks Команды для пункта меню "Просмотреть задачи"
+// BtnViewTasks Кнопки пункта меню "Просмотреть задачи"
 var BtnViewTasks = []bottypes.TgRowButtons{
 	{bottypes.TgInlineButton{DisplayName: resources.BtnFilterInProgress, Value: "/filter_in_progress"}},
 	{bottypes.TgInlineButton{DisplayName: resources.BtnFilterCompleted, Value: "/filter_completed"}},

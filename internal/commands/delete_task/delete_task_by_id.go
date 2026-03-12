@@ -13,11 +13,9 @@ import (
 )
 
 // DeleteTaskByIDCommand - структура команды /delete_task_by_id
-// Команда для удаления задачи по ID через callback.
 type DeleteTaskByIDCommand struct{}
 
 // Execute — реализация команды /delete_task_by_id.
-// Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *DeleteTaskByIDCommand) Execute(s command.Model, msg messaging.Message) error {
 
 	// Определяем отображаемое имя: сначала UserDisplayName, иначе UserName.

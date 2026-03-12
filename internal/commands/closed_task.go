@@ -18,7 +18,6 @@ import (
 type ClosedTaskCommand struct{}
 
 // Execute — реализация команды /closed_task.
-// Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *ClosedTaskCommand) Execute(s command.Model, msg messaging.Message) error {
 
 	// Определяем отображаемое имя: сначала UserDisplayName, иначе UserName.

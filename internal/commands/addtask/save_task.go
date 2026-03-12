@@ -19,7 +19,6 @@ import (
 type SaveTaskCommand struct{}
 
 // Execute — реализация команды /save_task.
-// Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error {
 
 	session, err := s.GetSessionService().GetOrCreateSession(s.GetCtx(), msg.UserID)

@@ -14,7 +14,6 @@ import (
 type ViewTasksCommand struct{}
 
 // Execute — реализация команды /view_tasks.
-// Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *ViewTasksCommand) Execute(s command.Model, msg messaging.Message) error {
 	// Определяем отображаемое имя: сначала UserDisplayName, иначе UserName.
 	displayName := helpers.GetDisplayName(msg)

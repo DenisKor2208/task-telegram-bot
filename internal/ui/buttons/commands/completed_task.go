@@ -5,7 +5,7 @@ import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
 )
 
-// BtnCompletedTask Команды для пункта меню "Выполнить задачу"
+// BtnCompletedTask Кнопки пункта меню "Выполнить задачу"
 var BtnCompletedTask = []bottypes.TgRowButtons{
 	{bottypes.TgInlineButton{DisplayName: resources.BtnMainMenu, Value: "/start"}},
 }

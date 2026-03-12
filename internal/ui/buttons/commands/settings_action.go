@@ -6,7 +6,7 @@ import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
 )
 
-// BtnSettingsAction Команды стартовых действий.
+// BtnSettingsAction Кнопки пункта меню "Настройки"
 var BtnSettingsAction = []bottypes.TgRowButtons{
 	{bottypes.TgInlineButton{DisplayName: resources.BtnSetTimezone, Value: "/set_timezone"}},
 	{bottypes.TgInlineButton{DisplayName: resources.BtnViewSettings, Value: "/settings_view_all"}},

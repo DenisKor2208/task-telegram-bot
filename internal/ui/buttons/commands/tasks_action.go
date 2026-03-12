@@ -6,7 +6,7 @@ import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
 )
 
-// BtnTasksAction Команды стартовых действий.
+// BtnTasksAction Кнопки пункта меню "Задачи"
 var BtnTasksAction = []bottypes.TgRowButtons{
 	{bottypes.TgInlineButton{DisplayName: resources.BtnAddTask, Value: "/add_task"}},
 	{bottypes.TgInlineButton{DisplayName: resources.BtnViewTasks, Value: "/view_tasks"}},

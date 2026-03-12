@@ -32,6 +32,12 @@ tasks:
     cmds:
       - docker compose down
 
+  # Запуск только PostgreSQL и Redis в Docker
+  db-up:
+    desc: Запустить только PostgreSQL и Redis в Docker
+    cmds:
+      - docker compose up -d postgres redis
+
   # Справка по работе с миграциями
   # Использование: task mg:help
   mg:help:

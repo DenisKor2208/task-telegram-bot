@@ -6,7 +6,7 @@ import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
 )
 
-// BtnClosedTaskByID Команды при удалении задачи
+// BtnClosedTaskByID Кнопки после смены статуса задачи на "Завершено"
 var BtnClosedTaskByID = []bottypes.TgRowButtons{
 	{bottypes.TgInlineButton{DisplayName: resources.BtnMainMenu, Value: "/start"}},
 	{bottypes.TgInlineButton{DisplayName: resources.BtnBack, Value: "/closed_task"}},

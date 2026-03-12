@@ -5,7 +5,7 @@ import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
 )
 
-// BtnOther
+// BtnOther Кнопки для использования в различных местах
 var BtnOther = []bottypes.TgRowButtons{
 	{bottypes.TgInlineButton{DisplayName: resources.BtnMainMenu, Value: "/start"}},
 }

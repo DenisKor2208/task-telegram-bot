@@ -1,0 +1,20 @@
+# Окружение
+env: "docker"
+
+# Токен бота в телеграме
+api_telegram_token: "${TELEGRAM_TOKEN}"
+
+# Строка подключения к PostgreSQL (в Docker)
+connection_string_db: "host=postgres port=5432 dbname=tgbot user=tgbotadmin password=tgbotadminpass sslmode=disable"
+
+redis:
+  # Строка подключения к Redis (в Docker)
+  redis_connection_string: "redis://redis:6379"
+  # Время жизни сессии в секундах
+  redis_session_ttl: 3600
+
+# проверка просроченных задач для смены статуса: раз в минуту
+overdue_check_interval: 60
+
+# проверка для отправки уведомлений: раз в 5 минут
+notification_check_interval: 300

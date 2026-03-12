@@ -15,7 +15,6 @@ import (
 type TasksActionCommand struct{}
 
 // Execute — реализация команды /tasks_action.
-// Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *TasksActionCommand) Execute(s command.Model, msg messaging.Message) error {
 	// Определяем отображаемое имя: сначала UserDisplayName, иначе UserName.
 	displayName := helpers.GetDisplayName(msg)

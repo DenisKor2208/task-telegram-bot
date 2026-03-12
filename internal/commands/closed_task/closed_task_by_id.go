@@ -16,11 +16,9 @@ import (
 )
 
 // ClosedTaskByIDCommand - структура команды /closed_task_by_id
-// Команда для завершения задачи по ID.
 type ClosedTaskByIDCommand struct{}
 
 // Execute — реализация команды /closed_task_by_id.
-// Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *ClosedTaskByIDCommand) Execute(s command.Model, msg messaging.Message) error {
 
 	// Определяем отображаемое имя: сначала UserDisplayName, иначе UserName.

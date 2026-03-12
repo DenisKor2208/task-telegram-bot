@@ -15,7 +15,6 @@ import (
 type StartCommand struct{}
 
 // Execute — реализация команды /start.
-// Отправляет приветственное сообщение с inline-кнопками пользователю.
 func (c *StartCommand) Execute(s command.Model, msg messaging.Message) error {
 	// Определяем отображаемое имя: сначала UserDisplayName, иначе UserName.
 	displayName := helpers.GetDisplayName(msg)
