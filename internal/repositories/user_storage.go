@@ -40,7 +40,7 @@ func (us *UserStorage) GetUserByTgID(ctx context.Context, userID int) (*models.U
 // limit — максимальное количество записей, offset — смещение.
 func (us *UserStorage) GetAllUsers(ctx context.Context, limit, offset int) ([]*models.User, error) {
 	var users []*models.User
-	query := `SELECT id, tg_id, name, created_at, updated_at FROM users ORDER BY id LIMIT $1 OFFSET $2`
+	query := `SELECT id, tg_id, name, timezone, created_at, updated_at FROM users ORDER BY id LIMIT $1 OFFSET $2`
 	err := dbutils.Select(ctx, us.db, &users, query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("GetAllUsers: %w", err)
@@ -51,7 +51,7 @@ func (us *UserStorage) GetAllUsers(ctx context.Context, limit, offset int) ([]*m
 // GetUserByID возвращает пользователя по его ID (первичный ключ).
 func (us *UserStorage) GetUserByID(ctx context.Context, userID int) (*models.User, error) {
 	var user models.User
-	const sqlString = `SELECT id, tg_id, name, created_at, updated_at FROM users WHERE id = $1`
+	const sqlString = `SELECT id, tg_id, name, timezone, created_at, updated_at FROM users WHERE id = $1`
 	err := dbutils.Get(ctx, us.db, &user, sqlString, userID)
 	if err != nil {
 		return nil, fmt.Errorf("GetUserByID: %w", err)

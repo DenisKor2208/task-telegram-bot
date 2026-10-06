@@ -2,6 +2,7 @@
 package addtask
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/DenisKor2208/task-telegram-bot/internal/helpers"
@@ -49,11 +50,21 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 		return errors.New(resources.ErrTaskDescriptionEmpty)
 	}
 
+	// Имя пользователя для БД: в БД имя обязательно (CHECK name <> ''),
+	// а @username в Telegram необязателен — берём первое непустое значение.
+	userName := msg.UserName
+	if userName == "" {
+		userName = msg.UserDisplayName // имя и фамилия из профиля Telegram
+	}
+	if userName == "" {
+		userName = fmt.Sprintf("user_%d", msg.UserID)
+	}
+
 	// Формируем модель пользователя
 	timestamp := time.Unix(msg.Date, 0)
 	user := &models.User{
 		TgID:      int(msg.UserID),
-		Name:      msg.UserName,
+		Name:      userName,
 		Timezone:  "UTC",
 		CreatedAt: timestamp,
 		UpdatedAt: timestamp,
