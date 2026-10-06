@@ -35,7 +35,7 @@ func (c *CompletedTaskByIDCommand) Execute(s command.Model, msg messaging.Messag
 		return s.GetTgClient().SendMessage(resources.ErrInvalidTaskID, msg.UserID)
 	}
 
-	task, err = s.GetTaskStorage().GetTaskByID(s.GetCtx(), taskID)
+	task, err = s.GetTaskStorage().GetTaskByID(s.GetCtx(), msg.UserID, taskID)
 	if err != nil {
 		return errors.Wrap(err, resources.ErrFailedToUpdateTask)
 	}

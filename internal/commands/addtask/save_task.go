@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/DenisKor2208/task-telegram-bot/internal/helpers"
+	"github.com/DenisKor2208/task-telegram-bot/internal/helpers/sessionutils"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
 	"github.com/DenisKor2208/task-telegram-bot/internal/logger"
@@ -86,20 +87,27 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 		if err != nil {
 			logger.Warn("Не удалось распарсить дедлайн, будет проигнорирован", "date", taskDate, "error", err)
 		} else {
-			task.Deadline = parsed.UTC()
+			deadlineUTC := parsed.UTC()
+			task.Deadline = &deadlineUTC
 		}
 	}
 
-	// Определяем статус задачи на основе дедлайна
+	// Определяем статус задачи на основе дедлайна (задача без дедлайна не может быть просрочена)
 	nowUTC := time.Now().UTC()
 	task.StatusID = repositories.StatusInProgress
-	if task.Deadline.Before(nowUTC) {
+	if task.Deadline != nil && task.Deadline.Before(nowUTC) {
 		task.StatusID = repositories.StatusOverdue
 	}
 
 	_, err = s.GetTaskStorage().CreateTask(s.GetCtx(), task)
 	if err != nil {
 		return errors.Wrap(err, resources.ErrFailedToSaveTask)
+	}
+
+	// Задача сохранена — диалог добавления завершён. Очищаем сессию,
+	// чтобы следующий текст пользователя не создал ещё одну задачу.
+	if _, err := sessionutils.ClearSessionData(s.GetCtx(), s.GetSessionService(), msg.UserID); err != nil {
+		logger.Error("Не удалось очистить сессию после сохранения задачи", "user_id", msg.UserID, "error", err)
 	}
 
 	return s.GetTgClient().ShowInlineButtons(resources.TXTSaveTask, commands.BtnSaveTask, msg.UserID)

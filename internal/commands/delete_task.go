@@ -31,7 +31,7 @@ func (c *DeleteTaskCommand) Execute(s command.Model, msg messaging.Message) erro
 		repositories.StatusClosed,
 	}
 
-	tasks, err := s.GetTaskStorage().GetTasksByStatusID(s.GetCtx(), statuses)
+	tasks, err := s.GetTaskStorage().GetTasksByStatusID(s.GetCtx(), msg.UserID, statuses)
 	if err != nil {
 		return errors.Wrap(err, "Не удалось получить задачи")
 	}
@@ -40,9 +40,9 @@ func (c *DeleteTaskCommand) Execute(s command.Model, msg messaging.Message) erro
 	var additionalButtons []bottypes.TgRowButtons
 
 	for _, task := range tasks {
-		deadlineStr := task.Deadline.Format("02.01.2006 15:04")
-		if task.Deadline.IsZero() {
-			deadlineStr = "Без дедлайна"
+		deadlineStr := "Без дедлайна"
+		if task.Deadline != nil {
+			deadlineStr = task.Deadline.Format("02.01.2006 15:04")
 		}
 
 		button := bottypes.TgInlineButton{

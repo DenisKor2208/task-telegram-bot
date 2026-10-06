@@ -20,14 +20,18 @@ func NewTaskStorage(db *sqlx.DB) *TaskStorage {
 	return &TaskStorage{db: db}
 }
 
-// GetTaskByID - returns task by tg id
-func (ts *TaskStorage) GetTaskByID(ctx context.Context, taskID int64) (*models.Task, error) {
+// GetTaskByID возвращает задачу по ID, только если она принадлежит пользователю с Telegram ID tgID.
+// Для чужой или несуществующей задачи возвращает ошибку (sql.ErrNoRows).
+func (ts *TaskStorage) GetTaskByID(ctx context.Context, tgID int64, taskID int64) (*models.Task, error) {
 	var task models.Task
 
-	const sqlString = `SELECT * FROM tasks WHERE id = $1`
+	const sqlString = `
+		SELECT t.* FROM tasks t
+		JOIN users u ON u.id = t.user_id
+		WHERE t.id = $1 AND u.tg_id = $2`
 
 	// Выполнение запроса на получение данных.
-	err := dbutils.Get(ctx, ts.db, &task, sqlString, taskID)
+	err := dbutils.Get(ctx, ts.db, &task, sqlString, taskID, tgID)
 	if err != nil {
 		return nil, err
 	}
@@ -35,21 +39,26 @@ func (ts *TaskStorage) GetTaskByID(ctx context.Context, taskID int64) (*models.T
 	return &task, nil
 }
 
-// GetAllTasks - returns all tasks
-func (ts *TaskStorage) GetAllTasks(ctx context.Context) ([]*models.Task, error) {
+// GetAllTasks возвращает все задачи пользователя с Telegram ID tgID.
+func (ts *TaskStorage) GetAllTasks(ctx context.Context, tgID int64) ([]*models.Task, error) {
 	var tasks []*models.Task
 
-	const sqlString = `SELECT * FROM tasks ORDER BY deadline NULLS LAST, created_at`
+	const sqlString = `
+		SELECT t.* FROM tasks t
+		JOIN users u ON u.id = t.user_id
+		WHERE u.tg_id = $1
+		ORDER BY t.deadline NULLS LAST, t.created_at`
 
-	err := dbutils.Select(ctx, ts.db, &tasks, sqlString)
+	err := dbutils.Select(ctx, ts.db, &tasks, sqlString, tgID)
 	if err != nil {
 		return nil, err
 	}
 	return tasks, nil
 }
 
-// GetTasksByStatusID GetAllTasks - returns all tasks
-func (ts *TaskStorage) GetTasksByStatusID(ctx context.Context, statusIDs []int) ([]*models.Task, error) {
+// GetTasksByStatusID возвращает задачи пользователя с Telegram ID tgID в указанных статусах.
+// Если статусы не переданы, возвращаются задачи во всех статусах.
+func (ts *TaskStorage) GetTasksByStatusID(ctx context.Context, tgID int64, statusIDs []int) ([]*models.Task, error) {
 	if len(statusIDs) == 0 {
 		statusIDs = []int{
 			StatusInProgress,
@@ -61,10 +70,14 @@ func (ts *TaskStorage) GetTasksByStatusID(ctx context.Context, statusIDs []int) 
 
 	var tasks []*models.Task
 
-	const sqlString = `SELECT * FROM tasks WHERE status_id IN (?) ORDER BY deadline NULLS LAST, created_at`
+	const sqlString = `
+		SELECT t.* FROM tasks t
+		JOIN users u ON u.id = t.user_id
+		WHERE u.tg_id = ? AND t.status_id IN (?)
+		ORDER BY t.deadline NULLS LAST, t.created_at`
 
 	// Подготавливаем запрос
-	query, args, err := sqlx.In(sqlString, statusIDs)
+	query, args, err := sqlx.In(sqlString, tgID, statusIDs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build query: %w", err)
 	}
@@ -105,11 +118,15 @@ func (ts *TaskStorage) CreateTask(ctx context.Context, task *models.Task) (bool,
 	return true, nil
 }
 
-// DeleteTaskByID - deletes task by ID
-func (ts *TaskStorage) DeleteTaskByID(ctx context.Context, taskID int64) error {
-	const sqlString = `DELETE FROM tasks WHERE id = :id`
+// DeleteTaskByID удаляет задачу по ID, только если она принадлежит пользователю с Telegram ID tgID.
+// Для чужой или несуществующей задачи возвращает ошибку «не найдена».
+func (ts *TaskStorage) DeleteTaskByID(ctx context.Context, tgID int64, taskID int64) error {
+	const sqlString = `
+		DELETE FROM tasks t
+		USING users u
+		WHERE t.id = :id AND t.user_id = u.id AND u.tg_id = :tg_id`
 
-	args := map[string]any{"id": taskID}
+	args := map[string]any{"id": taskID, "tg_id": tgID}
 
 	// Выполнение запроса на получение данных.
 	result, err := dbutils.NamedExec(ctx, ts.db, sqlString, args)
@@ -166,14 +183,14 @@ func (ts *TaskStorage) UpdateTask(ctx context.Context, task *models.Task) error 
 	return nil
 }
 
-// UpdateOverdueTasks обновляет статус задач, у которых дедлайн в прошлом и статус не "Просрочено".
+// UpdateOverdueTasks переводит в "Просрочено" задачи в статусе "В процессе", у которых дедлайн в прошлом.
+// Задачи в статусах "Выполнено", "Просрочено" и "Завершено" не затрагиваются.
 // Возвращает количество обновлённых строк.
 func (ts *TaskStorage) UpdateOverdueTasks(ctx context.Context) (int64, error) {
-	const overdueStatus = StatusOverdue
-	query := `UPDATE tasks 
-						SET status_id = $1, updated_at = NOW() 
-            WHERE deadline < NOW() AND status_id != $1`
-	result, err := ts.db.ExecContext(ctx, query, overdueStatus)
+	query := `UPDATE tasks
+						SET status_id = $1, updated_at = NOW()
+            WHERE deadline < NOW() AND status_id = $2`
+	result, err := ts.db.ExecContext(ctx, query, StatusOverdue, StatusInProgress)
 	if err != nil {
 		return 0, fmt.Errorf("failed to update overdue tasks: %w", err)
 	}

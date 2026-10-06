@@ -29,7 +29,7 @@ func (c *DeleteTaskByIDCommand) Execute(s command.Model, msg messaging.Message) 
 		return s.GetTgClient().SendMessage(resources.ErrInvalidTaskID, msg.UserID)
 	}
 
-	err = s.GetTaskStorage().DeleteTaskByID(s.GetCtx(), taskID)
+	err = s.GetTaskStorage().DeleteTaskByID(s.GetCtx(), msg.UserID, taskID)
 	if err != nil {
 		return err
 	}

@@ -3,6 +3,8 @@ package tg
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/DenisKor2208/task-telegram-bot/internal/helpers"
@@ -32,8 +34,34 @@ type TokenGetter interface {
 	Token() string
 }
 
+// redactingHTTPClient - HTTP-клиент для запросов к Telegram API, скрывающий токен бота в ошибках.
+// Токен входит в адрес каждого запроса (https://api.telegram.org/bot<TOKEN>/...),
+// и при сетевой ошибке Go добавляет этот адрес в текст ошибки, откуда он попадает в логи.
+type redactingHTTPClient struct {
+	client *http.Client
+	token  string
+}
+
+// Do выполняет запрос и заменяет токен в адресе сетевой ошибки на "<TOKEN>".
+func (c *redactingHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	resp, err := c.client.Do(req)
+
+	var urlErr *url.Error
+	if err != nil && c.token != "" && errors.As(err, &urlErr) {
+		urlErr.URL = strings.ReplaceAll(urlErr.URL, c.token, "<TOKEN>")
+	}
+
+	return resp, err
+}
+
 func New(tokenGetter TokenGetter, handlerProcessingFunc HandlerFunc) (*Client, error) {
-	client, err := tgbotapi.NewBotAPI(tokenGetter.Token())
+	token := tokenGetter.Token()
+
+	// Все запросы библиотеки идут через этот клиент, поэтому токен не попадёт в логи
+	// ни из нашего кода, ни из внутренних логов библиотеки.
+	httpClient := &redactingHTTPClient{client: &http.Client{}, token: token}
+
+	client, err := tgbotapi.NewBotAPIWithClient(token, tgbotapi.APIEndpoint, httpClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "Ошибка NewBotAPI")
 	}

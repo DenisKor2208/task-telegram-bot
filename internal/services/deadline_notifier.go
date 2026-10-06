@@ -93,6 +93,11 @@ func (n *DeadlineNotifier) checkDeadlines(ctx context.Context) {
 	now := time.Now().UTC()
 
 	for _, task := range tasks {
+		// Задачи без дедлайна не требуют уведомлений (SQL их и так отсекает, проверка — защита от nil)
+		if task.Deadline == nil {
+			continue
+		}
+
 		// Получаем уже отправленные типы для этой задачи
 		sentForTask := sentMap[task.ID] // если ключа нет, вернётся nil
 		sent := make(map[int]bool, len(sentForTask))

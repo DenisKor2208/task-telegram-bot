@@ -25,9 +25,9 @@ func (c *BaseFilterCommand) Execute(s command.Model, msg messaging.Message) erro
 	var err error
 
 	if len(c.Statuses) == 0 {
-		tasks, err = s.GetTaskStorage().GetAllTasks(s.GetCtx())
+		tasks, err = s.GetTaskStorage().GetAllTasks(s.GetCtx(), msg.UserID)
 	} else {
-		tasks, err = s.GetTaskStorage().GetTasksByStatusID(s.GetCtx(), c.Statuses)
+		tasks, err = s.GetTaskStorage().GetTasksByStatusID(s.GetCtx(), msg.UserID, c.Statuses)
 	}
 	if err != nil {
 		return errors.Wrap(err, "Не удалось получить задачи")
@@ -37,9 +37,9 @@ func (c *BaseFilterCommand) Execute(s command.Model, msg messaging.Message) erro
 	var taskButtons []bottypes.TgRowButtons
 
 	for _, task := range tasks {
-		deadlineStr := task.Deadline.Format("02.01.2006 15:04")
-		if task.Deadline.IsZero() {
-			deadlineStr = "Без дедлайна"
+		deadlineStr := "Без дедлайна"
+		if task.Deadline != nil {
+			deadlineStr = task.Deadline.Format("02.01.2006 15:04")
 		}
 
 		button := bottypes.TgInlineButton{
