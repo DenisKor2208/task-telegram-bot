@@ -2,6 +2,7 @@
 package helpers
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -31,30 +32,53 @@ func ParseCommandAndArgs(input string) (command string, args string) {
 	return command, args
 }
 
-// ParseForCommandSaveTask парсит строку в формате "/save_task <описание> <дата в DD.MM.YYYY> <время в HH:MM>".
-// Возвращает описание, дату и время в формате "DD.MM.YYYY HH:MM", и флаг успешности.
-func ParseForCommandSaveTask(input string) (description, datetime string, ok bool) {
+// TaskInput — результат разбора текста новой задачи.
+type TaskInput struct {
+	Description     string // описание задачи (пусто, если введена только дата)
+	Date            string // дата дедлайна "Д.М.ГГГГ" (пусто — без дедлайна)
+	Time            string // время дедлайна "Ч:ММ" (пусто — время не указано)
+	TimeWithoutDate bool   // в конце текста время "ЧЧ:ММ", но перед ним нет даты
+}
+
+var (
+	// <описание> <дата> <время>: день и месяц — 1–2 цифры, год — 4 цифры,
+	// время через двоеточие или точку (18:00 или 18.00). Описание может отсутствовать.
+	taskDateTimeRe = regexp.MustCompile(`^(?:(.*?)\s+)?(\d{1,2}\.\d{1,2}\.\d{4})\s+(\d{1,2})[:.](\d{2})$`)
+	// <описание> <дата> — дедлайн без времени. Описание может отсутствовать.
+	taskDateRe = regexp.MustCompile(`^(?:(.*?)\s+)?(\d{1,2}\.\d{1,2}\.\d{4})$`)
+	// В конце текста время без даты. Только через двоеточие: время через точку
+	// без даты не отличить от обычного числа в описании (например, «Купить 1.50 кг»).
+	taskTimeOnlyRe = regexp.MustCompile(`(?:^|\s)\d{1,2}:\d{2}$`)
+)
+
+// ParseTaskInput разбирает текст новой задачи: "<описание> [<дата> [<время>]]".
+// Возвращает false, если текст пустой.
+func ParseTaskInput(input string) (TaskInput, bool) {
 	trimmed := strings.TrimSpace(input)
 	if trimmed == "" {
-		return "", "", false
+		return TaskInput{}, false
 	}
 
-	fullPattern := `^(.+)\s+(\d{2}\.\d{2}\.\d{4})\s+(\d{2}:\d{2})$`
-	fullRe := regexp.MustCompile(fullPattern)
-	if matches := fullRe.FindStringSubmatch(trimmed); len(matches) == 4 {
-		description = strings.TrimSpace(matches[1])
-		datetime = matches[2] + " " + matches[3]
-		return description, datetime, true
+	if m := taskDateTimeRe.FindStringSubmatch(trimmed); m != nil {
+		return TaskInput{
+			Description: strings.TrimSpace(m[1]),
+			Date:        m[2],
+			Time:        m[3] + ":" + m[4],
+		}, true
 	}
 
-	datePattern := `^\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}$`
-	dateRe := regexp.MustCompile(datePattern)
-	if dateRe.MatchString(trimmed) {
-		return "", trimmed, true
+	if m := taskDateRe.FindStringSubmatch(trimmed); m != nil {
+		return TaskInput{
+			Description: strings.TrimSpace(m[1]),
+			Date:        m[2],
+		}, true
 	}
 
-	// Если не пусто и не дата, считаем описанием
-	return trimmed, "", true
+	// Если не дата, считаем описанием
+	return TaskInput{
+		Description:     trimmed,
+		TimeWithoutDate: taskTimeOnlyRe.MatchString(trimmed),
+	}, true
 }
 
 func GetDisplayName(msg messaging.Message) string {
@@ -62,4 +86,17 @@ func GetDisplayName(msg messaging.Message) string {
 		return msg.UserDisplayName
 	}
 	return msg.UserName
+}
+
+// GetUserNameForDB возвращает имя пользователя для сохранения в БД.
+// В БД стоит проверка, что имя не пустое, а @username в Telegram необязателен,
+// поэтому берётся первое непустое значение: @username, имя из профиля, user_<Telegram ID>.
+func GetUserNameForDB(msg messaging.Message) string {
+	if msg.UserName != "" {
+		return msg.UserName
+	}
+	if msg.UserDisplayName != "" {
+		return msg.UserDisplayName // имя и фамилия из профиля Telegram
+	}
+	return fmt.Sprintf("user_%d", msg.UserID)
 }

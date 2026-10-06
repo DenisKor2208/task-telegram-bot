@@ -5,12 +5,17 @@ import (
 	"log"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/DenisKor2208/task-telegram-bot/internal/logger"
 	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
+	// Бот всегда работает в UTC, независимо от часового пояса сервера.
+	// Время показывается пользователю только после явного перевода в его часовой пояс.
+	time.Local = time.UTC
+
 	logger.Info("Старт приложения")
 
 	ctx := context.Background()

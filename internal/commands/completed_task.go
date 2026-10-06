@@ -45,15 +45,15 @@ func (c *CompletedTaskCommand) Execute(s command.Model, msg messaging.Message) e
 	// Инициализируем пустой срез для дополнительных кнопок
 	var additionalButtons []bottypes.TgRowButtons
 
+	// Дедлайны показываем в часовом поясе пользователя
+	loc := helpers.UserLocation(s.GetCtx(), s.GetUserStorage(), msg.UserID)
+
 	// Добавляем кнопки для каждой задачи
 	for _, task := range tasks {
-		deadlineStr := "Без дедлайна"
-		if task.Deadline != nil {
-			deadlineStr = task.Deadline.Format("02.01.2006 15:04")
-		}
+		deadlineStr := helpers.DeadlineLabel(task.Deadline, loc)
 
 		button := bottypes.TgInlineButton{
-			DisplayName: fmt.Sprintf("%s (до %s)", task.Description, deadlineStr),
+			DisplayName: fmt.Sprintf("%s (%s)", task.Description, deadlineStr),
 			Value:       fmt.Sprintf("/completed_task_by_id %d", task.ID),
 		}
 

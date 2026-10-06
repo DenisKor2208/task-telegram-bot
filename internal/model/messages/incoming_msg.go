@@ -4,6 +4,7 @@ package messages
 import (
 	"context"
 
+	"github.com/DenisKor2208/task-telegram-bot/internal/helpers"
 	"github.com/DenisKor2208/task-telegram-bot/internal/helpers/sessionutils"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
@@ -64,10 +65,27 @@ func (s *Model) GetSessionService() service.Session   { return s.sessionService 
 
 // IncomingMessage — главная точка входа для обработки сообщений от Telegram.
 func (s *Model) IncomingMessage(msg messaging.Message) error {
+	s.ensureUser(msg)
+
 	if msg.IsCallback || msg.IsCommand {
 		return s.handleCallback(msg)
 	}
 	return s.handleUserInput(msg)
+}
+
+// ensureUser создаёт пользователя в БД при первом обращении к боту (если его ещё нет),
+// чтобы настройки (например, часовой пояс) работали ещё до создания первой задачи.
+// Ошибка только логируется: бот должен отвечать, даже если БД временно недоступна.
+func (s *Model) ensureUser(msg messaging.Message) {
+	user := &models.User{
+		TgID:     int(msg.UserID),
+		Name:     helpers.GetUserNameForDB(msg),
+		Timezone: "UTC",
+	}
+
+	if _, err := s.userStorage.CreateUser(s.ctx, user); err != nil {
+		logger.Error("Не удалось создать пользователя", "user_id", msg.UserID, "error", err)
+	}
 }
 
 // handleCallback обрабатывает нажатия на inline-кнопки.

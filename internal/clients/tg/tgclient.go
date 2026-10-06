@@ -152,7 +152,7 @@ func ProcessingMessages(tgUpdate *tgbotapi.Update, c *Client, msgModel *messages
 		parseMessage(msg.Text, &msg)
 
 		if err := msgModel.IncomingMessage(msg); err != nil {
-			_ = c.ShowInlineButtons(resources.TXTStart, commands.BtnOther, msg.UserID)
+			showProcessingError(c, msg.UserID, err)
 
 			logger.Error("error processing message:", "err", err)
 		}
@@ -182,11 +182,25 @@ func ProcessingMessages(tgUpdate *tgbotapi.Update, c *Client, msgModel *messages
 		parseMessage(msg.Text, &msg)
 
 		if err := msgModel.IncomingMessage(msg); err != nil {
-			_ = c.ShowInlineButtons(resources.TXTStart, commands.BtnOther, msg.UserID)
+			showProcessingError(c, msg.UserID, err)
 
 			logger.Error("error processing callback:", "err", err)
 		}
 	}
+}
+
+// showProcessingError показывает пользователю сообщение об ошибке обработки.
+// Причину ошибки показывает, только если пользователь может исправить её сам (messaging.UserError),
+// иначе — общее сообщение, чтобы не раскрывать внутренние детали (подробности пишутся в лог).
+func showProcessingError(c *Client, userID int64, err error) {
+	text := resources.ErrGeneric
+
+	var userErr *messaging.UserError
+	if errors.As(err, &userErr) {
+		text = userErr.Text
+	}
+
+	_ = c.ShowInlineButtons(text, commands.BtnOther, userID)
 }
 
 // ShowInlineButtons Отображение кнопок меню под сообщением с ответом.

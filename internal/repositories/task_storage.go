@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -9,6 +11,10 @@ import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/models"
 	"github.com/jmoiron/sqlx"
 )
+
+// ErrTaskNotFound — задача не найдена или принадлежит другому пользователю.
+// Позволяет отличить «задачи нет» от сбоя БД.
+var ErrTaskNotFound = errors.New("задача не найдена")
 
 // TaskStorage - task storage
 type TaskStorage struct {
@@ -21,7 +27,7 @@ func NewTaskStorage(db *sqlx.DB) *TaskStorage {
 }
 
 // GetTaskByID возвращает задачу по ID, только если она принадлежит пользователю с Telegram ID tgID.
-// Для чужой или несуществующей задачи возвращает ошибку (sql.ErrNoRows).
+// Для чужой или несуществующей задачи возвращает ErrTaskNotFound.
 func (ts *TaskStorage) GetTaskByID(ctx context.Context, tgID int64, taskID int64) (*models.Task, error) {
 	var task models.Task
 
@@ -32,6 +38,9 @@ func (ts *TaskStorage) GetTaskByID(ctx context.Context, tgID int64, taskID int64
 
 	// Выполнение запроса на получение данных.
 	err := dbutils.Get(ctx, ts.db, &task, sqlString, taskID, tgID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("задача с ID %d: %w", taskID, ErrTaskNotFound)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +128,7 @@ func (ts *TaskStorage) CreateTask(ctx context.Context, task *models.Task) (bool,
 }
 
 // DeleteTaskByID удаляет задачу по ID, только если она принадлежит пользователю с Telegram ID tgID.
-// Для чужой или несуществующей задачи возвращает ошибку «не найдена».
+// Для чужой или несуществующей задачи возвращает ErrTaskNotFound.
 func (ts *TaskStorage) DeleteTaskByID(ctx context.Context, tgID int64, taskID int64) error {
 	const sqlString = `
 		DELETE FROM tasks t
@@ -140,13 +149,14 @@ func (ts *TaskStorage) DeleteTaskByID(ctx context.Context, tgID int64, taskID in
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("задача с ID %d не найдена", taskID)
+		return fmt.Errorf("задача с ID %d: %w", taskID, ErrTaskNotFound)
 	}
 
 	return nil
 }
 
 // UpdateTask - updates task by ID
+// Если задачи уже нет, возвращает ErrTaskNotFound.
 func (ts *TaskStorage) UpdateTask(ctx context.Context, task *models.Task) error {
 	if task.ID <= 0 {
 		return fmt.Errorf("invalid task ID: %d", task.ID)
@@ -177,7 +187,7 @@ func (ts *TaskStorage) UpdateTask(ctx context.Context, task *models.Task) error 
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("задача с ID %d не найдена", task.ID)
+		return fmt.Errorf("задача с ID %d: %w", task.ID, ErrTaskNotFound)
 	}
 
 	return nil

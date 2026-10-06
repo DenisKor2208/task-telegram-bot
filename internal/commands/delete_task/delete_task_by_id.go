@@ -8,8 +8,10 @@ import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/command"
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/bottypes"
+	"github.com/DenisKor2208/task-telegram-bot/internal/repositories"
 	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
 	btndeletetaskbyid "github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands/deletetask"
+	"github.com/pkg/errors"
 )
 
 // DeleteTaskByIDCommand - структура команды /delete_task_by_id
@@ -30,6 +32,10 @@ func (c *DeleteTaskByIDCommand) Execute(s command.Model, msg messaging.Message) 
 	}
 
 	err = s.GetTaskStorage().DeleteTaskByID(s.GetCtx(), msg.UserID, taskID)
+	if errors.Is(err, repositories.ErrTaskNotFound) {
+		// Задачи нет или она чужая — для пользователя это одно и то же
+		return messaging.NewUserError(resources.ErrTaskNotFound)
+	}
 	if err != nil {
 		return err
 	}

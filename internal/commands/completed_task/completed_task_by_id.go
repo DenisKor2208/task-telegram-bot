@@ -36,6 +36,10 @@ func (c *CompletedTaskByIDCommand) Execute(s command.Model, msg messaging.Messag
 	}
 
 	task, err = s.GetTaskStorage().GetTaskByID(s.GetCtx(), msg.UserID, taskID)
+	if errors.Is(err, repositories.ErrTaskNotFound) {
+		// Задачи нет или она чужая — для пользователя это одно и то же
+		return messaging.NewUserError(resources.ErrTaskNotFound)
+	}
 	if err != nil {
 		return errors.Wrap(err, resources.ErrFailedToUpdateTask)
 	}
@@ -44,6 +48,9 @@ func (c *CompletedTaskByIDCommand) Execute(s command.Model, msg messaging.Messag
 	task.UpdatedAt = time.Now()
 
 	err = s.GetTaskStorage().UpdateTask(s.GetCtx(), task)
+	if errors.Is(err, repositories.ErrTaskNotFound) {
+		return messaging.NewUserError(resources.ErrTaskNotFound)
+	}
 	if err != nil {
 		return err
 	}

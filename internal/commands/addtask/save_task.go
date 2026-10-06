@@ -2,7 +2,6 @@
 package addtask
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/DenisKor2208/task-telegram-bot/internal/helpers"
@@ -36,41 +35,38 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 	if args, ok := session.Data["title"].(string); ok && args != "" {
 		argsText = args
 	} else {
-		return errors.New("arguments not found or invalid in session")
+		// Пользователь прислал не текст (фото, стикер и т.п.) — он может исправить это сам
+		return messaging.NewUserError(resources.ErrTaskDescriptionEmpty)
 	}
 
 	// Теперь парсим аргументы из сессии
-	taskDesc, taskDate, ok := helpers.ParseForCommandSaveTask(argsText)
+	input, ok := helpers.ParseTaskInput(argsText)
 	if !ok {
-		return errors.New(resources.ErrFailedToSaveTask)
+		return messaging.NewUserError(resources.ErrTaskDescriptionEmpty)
 	}
 
-	// Если описание задачи пустое
-	if taskDesc == "" {
-		return errors.New(resources.ErrTaskDescriptionEmpty)
+	// В конце указано время, но без даты (например, «Купить молоко в 18:00»)
+	if input.TimeWithoutDate {
+		return messaging.NewUserError(resources.ErrTimeWithoutDate)
 	}
 
-	// Имя пользователя для БД: в БД имя обязательно (CHECK name <> ''),
-	// а @username в Telegram необязателен — берём первое непустое значение.
-	userName := msg.UserName
-	if userName == "" {
-		userName = msg.UserDisplayName // имя и фамилия из профиля Telegram
-	}
-	if userName == "" {
-		userName = fmt.Sprintf("user_%d", msg.UserID)
+	// Если описание задачи пустое (например, введена только дата)
+	if input.Description == "" {
+		return messaging.NewUserError(resources.ErrTaskDescriptionEmpty)
 	}
 
 	// Формируем модель пользователя
 	timestamp := time.Unix(msg.Date, 0)
 	user := &models.User{
 		TgID:      int(msg.UserID),
-		Name:      userName,
+		Name:      helpers.GetUserNameForDB(msg),
 		Timezone:  "UTC",
 		CreatedAt: timestamp,
 		UpdatedAt: timestamp,
 	}
 
-	// Сохраняем пользователя
+	// Получаем пользователя (обычно он уже создан в Model.IncomingMessage;
+	// CreateUser вернёт существующего или создаст, если там не получилось)
 	createdUser, err := s.GetUserStorage().CreateUser(s.GetCtx(), user)
 	if err != nil {
 		return errors.Wrap(err, resources.ErrFailedToSaveTask)
@@ -86,21 +82,32 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 
 	// Формируем модель задачи
 	task := &models.Task{
-		Description: taskDesc,
+		Description: input.Description,
 		UserID:      createdUser.ID,
 		CreatedAt:   timestamp,
 		UpdatedAt:   timestamp,
 	}
 
-	if taskDate != "" {
-		layout := "02.01.2006 15:04"
-		parsed, err := time.ParseInLocation(layout, taskDate, loc)
-		if err != nil {
-			logger.Warn("Не удалось распарсить дедлайн, будет проигнорирован", "date", taskDate, "error", err)
-		} else {
-			deadlineUTC := parsed.UTC()
-			task.Deadline = &deadlineUTC
+	if input.Date != "" {
+		// Указана только дата — дедлайн до конца дня
+		timeStr := input.Time
+		if timeStr == "" {
+			timeStr = helpers.DefaultDeadlineTime
 		}
+
+		// Дата и время интерпретируются в часовом поясе пользователя
+		parsed, err := time.ParseInLocation(helpers.DeadlineInputLayout, input.Date+" "+timeStr, loc)
+		if err != nil {
+			// Формат верный, но такой даты или времени нет (например, 31.02.2026 или 25:00)
+			return messaging.NewUserError(resources.ErrInvalidDeadline)
+		}
+
+		if !parsed.After(time.Now()) {
+			return messaging.NewUserError(resources.ErrDeadlinePassed)
+		}
+
+		deadlineUTC := parsed.UTC()
+		task.Deadline = &deadlineUTC
 	}
 
 	// Определяем статус задачи на основе дедлайна (задача без дедлайна не может быть просрочена)
@@ -121,7 +128,10 @@ func (c *SaveTaskCommand) Execute(s command.Model, msg messaging.Message) error 
 		logger.Error("Не удалось очистить сессию после сохранения задачи", "user_id", msg.UserID, "error", err)
 	}
 
-	return s.GetTgClient().ShowInlineButtons(resources.TXTSaveTask, commands.BtnSaveTask, msg.UserID)
+	// Показываем, как бот понял дедлайн, чтобы пользователь сразу заметил ошибку
+	text := resources.TXTSaveTask + "\n" + helpers.DeadlineText(task.Deadline, loc)
+
+	return s.GetTgClient().ShowInlineButtons(text, commands.BtnSaveTask, msg.UserID)
 
 }
 
