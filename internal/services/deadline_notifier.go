@@ -2,7 +2,9 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"html"
 	"time"
 
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
@@ -113,8 +115,16 @@ func (n *DeadlineNotifier) checkDeadlines(ctx context.Context) {
 			// Время, когда нужно отправить уведомление
 			notifyTime := task.Deadline.Add(-time.Duration(nt.TimeBefore) * time.Second)
 			if !now.Before(notifyTime) {
-				// Отправляем
-				n.sendNotification(ctx, task, nt)
+				// Отправляем. Если отправить не удалось, факт отправки не записываем —
+				// уведомление будет отправлено повторно на следующей проверке.
+				if err := n.sendNotification(ctx, task, nt); err != nil {
+					// Пользователь заблокировал бота — повторять бесполезно, записываем как отправленное
+					if !errors.Is(err, messaging.ErrBotBlocked) {
+						logger.Error("DeadlineNotifier: уведомление не отправлено, повтор на следующей проверке", "task_id", task.ID, "type_id", nt.ID, "error", err)
+						continue
+					}
+					logger.Warn("DeadlineNotifier: пользователь заблокировал бота, уведомление пропущено", "task_id", task.ID, "type_id", nt.ID, "error", err)
+				}
 				// Записываем факт отправки (дубликаты игнорируются на уровне БД)
 				if err := n.taskNotifStorage.Insert(ctx, task.ID, nt.ID); err != nil {
 					logger.Error("DeadlineNotifier: не удалось записать отправку", "task_id", task.ID, "type_id", nt.ID, "error", err)
@@ -124,11 +134,11 @@ func (n *DeadlineNotifier) checkDeadlines(ctx context.Context) {
 	}
 }
 
-func (n *DeadlineNotifier) sendNotification(ctx context.Context, task *models.Task, nt *models.NotificationType) {
+// sendNotification отправляет напоминание о задаче. Возвращает ошибку, если напоминание не доставлено.
+func (n *DeadlineNotifier) sendNotification(ctx context.Context, task *models.Task, nt *models.NotificationType) error {
 	user, err := n.userStorage.GetUserByID(ctx, task.UserID)
 	if err != nil {
-		logger.Error("DeadlineNotifier: не удалось получить пользователя", "user_id", task.UserID, "error", err)
-		return
+		return fmt.Errorf("не удалось получить пользователя %d: %w", task.UserID, err)
 	}
 
 	// Загружаем локацию пользователя
@@ -142,11 +152,13 @@ func (n *DeadlineNotifier) sendNotification(ctx context.Context, task *models.Ta
 	deadlineLocal := task.Deadline.In(loc)
 	deadlineStr := deadlineLocal.Format("02.01.2006 15:04")
 
-	text := fmt.Sprintf("🔔 Напоминание: %s\nДедлайн: %s (%s)\n⏰ %s", task.Description, deadlineStr, user.Timezone, nt.Name)
+	// Сообщение отправляется в режиме HTML — описание экранируем, иначе < > & в нём ломают отправку
+	text := fmt.Sprintf("🔔 Напоминание: %s\nДедлайн: %s (%s)\n⏰ %s", html.EscapeString(task.Description), deadlineStr, user.Timezone, nt.Name)
 
 	if err := n.tgClient.SendMessage(text, int64(user.TgID)); err != nil {
-		logger.Error("DeadlineNotifier: ошибка отправки сообщения", "user_id", user.TgID, "error", err)
-	} else {
-		logger.Info("DeadlineNotifier: отправлено уведомление", "user_id", user.TgID, "task_id", task.ID, "type", nt.Name)
+		return fmt.Errorf("ошибка отправки сообщения пользователю %d: %w", user.TgID, err)
 	}
+
+	logger.Info("DeadlineNotifier: отправлено уведомление", "user_id", user.TgID, "task_id", task.ID, "type", nt.Name)
+	return nil
 }

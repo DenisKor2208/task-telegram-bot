@@ -9,15 +9,15 @@ import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/interfaces/messaging"
 	"github.com/DenisKor2208/task-telegram-bot/internal/model/bottypes"
 	"github.com/DenisKor2208/task-telegram-bot/internal/models"
-	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
 	btnbasefilter "github.com/DenisKor2208/task-telegram-bot/internal/ui/buttons/commands/viewstasks"
 	"github.com/pkg/errors"
 )
 
 // BaseFilterCommand - общая команда для фильтрации задач по статусам.
 type BaseFilterCommand struct {
-	Statuses    []int  // список статусов
-	ResourceKey string // ключ для получения текста из resources.FilterTexts
+	Statuses  []int  // список статусов
+	Text      string // заголовок списка
+	EmptyText string // текст, если задач с такими статусами нет
 }
 
 func (c *BaseFilterCommand) Execute(s command.Model, msg messaging.Message) error {
@@ -40,12 +40,7 @@ func (c *BaseFilterCommand) Execute(s command.Model, msg messaging.Message) erro
 	loc := helpers.UserLocation(s.GetCtx(), s.GetUserStorage(), msg.UserID)
 
 	for _, task := range tasks {
-		deadlineStr := helpers.DeadlineLabel(task.Deadline, loc)
-
-		button := bottypes.TgInlineButton{
-			DisplayName: fmt.Sprintf("%s (%s)", task.Description, deadlineStr),
-			Value:       fmt.Sprintf("/view_tasks %d", task.ID),
-		}
+		button := helpers.TaskButton(task, loc, "/view_tasks")
 		taskButtons = append(taskButtons, bottypes.TgRowButtons{button})
 	}
 
@@ -53,7 +48,10 @@ func (c *BaseFilterCommand) Execute(s command.Model, msg messaging.Message) erro
 	buttons = append(buttons, btnbasefilter.BtnBaseFilter...)
 
 	displayName := helpers.GetDisplayName(msg)
-	text := fmt.Sprintf(resources.TXTFilterAll, displayName)
+	text := fmt.Sprintf(c.Text, displayName)
+	if len(tasks) == 0 {
+		text = fmt.Sprintf(c.EmptyText, displayName)
+	}
 
 	return s.GetTgClient().ShowInlineButtons(text, buttons, msg.UserID)
 }

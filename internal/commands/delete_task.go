@@ -36,6 +36,11 @@ func (c *DeleteTaskCommand) Execute(s command.Model, msg messaging.Message) erro
 		return errors.Wrap(err, "Не удалось получить задачи")
 	}
 
+	// Задач нет
+	if len(tasks) == 0 {
+		text = fmt.Sprintf(resources.TXTDeleteTaskEmpty, displayName)
+	}
+
 	var buttons []bottypes.TgRowButtons
 	var additionalButtons []bottypes.TgRowButtons
 
@@ -43,12 +48,7 @@ func (c *DeleteTaskCommand) Execute(s command.Model, msg messaging.Message) erro
 	loc := helpers.UserLocation(s.GetCtx(), s.GetUserStorage(), msg.UserID)
 
 	for _, task := range tasks {
-		deadlineStr := helpers.DeadlineLabel(task.Deadline, loc)
-
-		button := bottypes.TgInlineButton{
-			DisplayName: fmt.Sprintf("%s (%s)", task.Description, deadlineStr),
-			Value:       fmt.Sprintf("/delete_task_by_id %d", task.ID),
-		}
+		button := helpers.TaskButton(task, loc, "/delete_task_by_id")
 		additionalButtons = append(additionalButtons, bottypes.TgRowButtons{button})
 	}
 

@@ -1,7 +1,13 @@
 // Package messaging
 package messaging
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+// ErrBotBlocked — пользователь заблокировал бота или удалил аккаунт
+var ErrBotBlocked = errors.New("пользователь недоступен: бот заблокирован или аккаунт удалён")
 
 // Message Структура сообщения для обработки.
 type Message struct {

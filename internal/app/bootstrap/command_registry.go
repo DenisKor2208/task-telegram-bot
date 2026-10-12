@@ -4,6 +4,7 @@ package bootstrap
 import (
 	"github.com/DenisKor2208/task-telegram-bot/internal/commands"
 	"github.com/DenisKor2208/task-telegram-bot/internal/repositories"
+	"github.com/DenisKor2208/task-telegram-bot/internal/resources"
 
 	cmdaddtask "github.com/DenisKor2208/task-telegram-bot/internal/commands/addtask"
 	cmdclosedtask "github.com/DenisKor2208/task-telegram-bot/internal/commands/closed_task"
@@ -31,24 +32,29 @@ func CommandRegistry() *commands.RegistryCommands {
 	// Просмотреть задачи
 	registry.RegisterCommand("view_tasks", &commands.ViewTasksCommand{})
 	registry.RegisterCommand("filter_all", &cmdviewstasks.BaseFilterCommand{
-		Statuses:    nil, // все статусы
-		ResourceKey: "filter_all",
+		Statuses:  nil, // все статусы
+		Text:      resources.TXTFilterAll,
+		EmptyText: resources.TXTFilterAllEmpty,
 	})
 	registry.RegisterCommand("filter_in_progress", &cmdviewstasks.BaseFilterCommand{
-		Statuses:    []int{repositories.StatusInProgress},
-		ResourceKey: "filter_in_progress",
+		Statuses:  []int{repositories.StatusInProgress},
+		Text:      resources.TXTFilterInProgress,
+		EmptyText: resources.TXTFilterInProgressEmpty,
 	})
 	registry.RegisterCommand("filter_completed", &cmdviewstasks.BaseFilterCommand{
-		Statuses:    []int{repositories.StatusCompleted},
-		ResourceKey: "filter_completed",
+		Statuses:  []int{repositories.StatusCompleted},
+		Text:      resources.TXTFilterCompleted,
+		EmptyText: resources.TXTFilterCompletedEmpty,
 	})
 	registry.RegisterCommand("filter_overdue", &cmdviewstasks.BaseFilterCommand{
-		Statuses:    []int{repositories.StatusOverdue},
-		ResourceKey: "filter_overdue",
+		Statuses:  []int{repositories.StatusOverdue},
+		Text:      resources.TXTFilterOverdue,
+		EmptyText: resources.TXTFilterOverdueEmpty,
 	})
 	registry.RegisterCommand("filter_closed", &cmdviewstasks.BaseFilterCommand{
-		Statuses:    []int{repositories.StatusClosed},
-		ResourceKey: "filter_closed",
+		Statuses:  []int{repositories.StatusClosed},
+		Text:      resources.TXTFilterClosed,
+		EmptyText: resources.TXTFilterClosedEmpty,
 	})
 
 	// Удалить задачу

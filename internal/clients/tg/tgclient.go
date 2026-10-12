@@ -79,6 +79,11 @@ func (c *Client) SendMessage(text string, userID int64) error {
 	msg.ParseMode = "HTML"
 	_, err := c.Client.Send(msg)
 	if err != nil {
+		// 403 — пользователь заблокировал бота
+		var apiErr *tgbotapi.Error
+		if errors.As(err, &apiErr) && apiErr.Code == http.StatusForbidden {
+			return errors.Wrap(messaging.ErrBotBlocked, apiErr.Message)
+		}
 		return errors.Wrap(err, "Ошибка отправки сообщения client.Send")
 	}
 	return nil
@@ -203,21 +208,36 @@ func showProcessingError(c *Client, userID int64, err error) {
 	_ = c.ShowInlineButtons(text, commands.BtnOther, userID)
 }
 
+// styledInlineKeyboard - inline-клавиатура с цветными кнопками.
+type styledInlineKeyboard struct {
+	InlineKeyboard [][]styledInlineButton `json:"inline_keyboard"`
+}
+
+// styledInlineButton - inline-кнопка с коллбеком и необязательным цветом (style).
+type styledInlineButton struct {
+	Text         string `json:"text"`
+	CallbackData string `json:"callback_data"`
+	Style        string `json:"style,omitempty"`
+}
+
 // ShowInlineButtons Отображение кнопок меню под сообщением с ответом.
 // Их нажатие ожидает коллбек-ответ.
 func (c *Client) ShowInlineButtons(text string, buttons []bottypes.TgRowButtons, userID int64) error {
-	keyboard := make([][]tgbotapi.InlineKeyboardButton, len(buttons))
+	keyboard := make([][]styledInlineButton, len(buttons))
 	for i := 0; i < len(buttons); i++ {
 		tgRowButtons := buttons[i]
-		keyboard[i] = make([]tgbotapi.InlineKeyboardButton, len(tgRowButtons))
+		keyboard[i] = make([]styledInlineButton, len(tgRowButtons))
 		for j := 0; j < len(tgRowButtons); j++ {
 			tgInlineButton := tgRowButtons[j]
-			keyboard[i][j] = tgbotapi.NewInlineKeyboardButtonData(tgInlineButton.DisplayName, tgInlineButton.Value)
+			keyboard[i][j] = styledInlineButton{
+				Text:         tgInlineButton.DisplayName,
+				CallbackData: tgInlineButton.Value,
+				Style:        tgInlineButton.Style,
+			}
 		}
 	}
-	var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(keyboard...)
 	msg := tgbotapi.NewMessage(userID, text)
-	msg.ReplyMarkup = numericKeyboard
+	msg.ReplyMarkup = styledInlineKeyboard{InlineKeyboard: keyboard}
 	msg.ParseMode = "HTML"
 	_, err := c.Client.Send(msg)
 	if err != nil {

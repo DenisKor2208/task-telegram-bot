@@ -22,97 +22,109 @@ func main() {
 
 	if len(os.Args) < 2 {
 		helpInfo()
+		os.Exit(2)
 	}
 
 	command := os.Args[1]
 
 	if command == "help" || command == "--help" || command == "-h" {
 		helpInfo()
-		os.Exit(1)
+		os.Exit(0)
+	}
+
+	// Создание миграции
+	if command == "create" {
+		if len(os.Args) < 3 {
+			usageError("Укажите имя миграции: create <name>")
+		}
+		createMigration(os.Args[2])
+		return
 	}
 
 	migrationsPath := "file://./migrations"
 
 	logger.Info("Старт приложения")
 
-	cfg, err := config.New()
+	cfg, err := config.NewDatabase()
 	if err != nil {
-		logger.Fatal("Ошибка получения файла конфигурации:", "err", err)
+		logger.Fatal("Ошибка чтения настроек подключения к БД", "err", err)
 	}
 
 	// Подключение к БД
-	db, err := sql.Open("postgres", cfg.GetConfig().ConnectionStringDB)
+	db, err := sql.Open("postgres", cfg.ConnectionString)
 	if err != nil {
-		logger.Fatal("Ошибка подключения к БД:", err)
+		logger.Fatal("Ошибка подключения к БД", "err", err)
 	}
 	defer db.Close()
 
 	// Настройка драйвера миграций
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
-		logger.Fatal("Ошибка настройки драйвера:", err)
+		logger.Fatal("Ошибка настройки драйвера", "err", err)
 	}
 
 	// Источник миграций из файлов
 	source, err := (&file.File{}).Open(migrationsPath)
 	if err != nil {
-		logger.Fatal("Ошибка открытия источника миграций:", err)
+		logger.Fatal("Ошибка открытия источника миграций", "err", err)
 	}
 
 	// Создание экземпляра migrate
 	m, err := migrate.NewWithInstance("file", source, "postgres", driver)
 	if err != nil {
-		logger.Fatal("Ошибка создания migrate:", err)
+		logger.Fatal("Ошибка создания migrate", "err", err)
 	}
 	defer m.Close()
 
 	// Обработка команд
 	switch command {
-	case "create":
-		if len(os.Args) < 3 {
-			logger.Fatal("Укажите имя миграции: create <name>")
-		}
-		name := os.Args[2]
-		createMigration(name)
 	case "up":
 		if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-			logger.Fatal("Ошибка применения миграций:", err)
+			logger.Fatal("Ошибка применения миграций", "err", err)
 		}
 		fmt.Println("Миграции применены!")
 	case "down":
 		if len(os.Args) < 3 {
-			logger.Fatal("Укажите количество миграций для отката: down <n>")
+			usageError("Укажите количество миграций для отката: down <n>")
 		}
 		n, err := strconv.Atoi(os.Args[2])
 		if err != nil {
-			logger.Fatal("Неверное число:", err)
+			usageError("Количество миграций должно быть числом: down <n>")
 		}
 		if err := m.Steps(-n); err != nil && err != migrate.ErrNoChange {
-			logger.Fatal("Ошибка отката миграций:", err)
+			logger.Fatal("Ошибка отката миграций", "err", err)
 		}
 		fmt.Println("Миграции откатаны!")
 	case "version":
 		version, dirty, err := m.Version()
 		if err != nil {
-			logger.Fatal("Ошибка получения версии:", err)
+			logger.Fatal("Ошибка получения версии", "err", err)
 		}
 		fmt.Printf("Версия: %d, Dirty: %t\n", version, dirty)
 	case "goto":
-		fmt.Println(os.Args)
 		if len(os.Args) < 3 {
-			logger.Fatal("Укажите версию: goto <version>")
+			usageError("Укажите версию: goto <version>")
 		}
 		version, err := strconv.ParseUint(os.Args[2], 10, 64)
 		if err != nil {
-			logger.Fatal("Неверная версия:", err)
+			usageError("Версия должна быть числом: goto <version>")
 		}
 		if err := m.Migrate(uint(version)); err != nil && err != migrate.ErrNoChange {
-			logger.Fatal("Ошибка перехода к версии:", err)
+			logger.Fatal("Ошибка перехода к версии", "err", err)
 		}
 		fmt.Println("Переход выполнен!")
 	default:
-		logger.Fatal("Неизвестная команда:", command)
+		usageError("Неизвестная команда: " + command)
 	}
+}
+
+// usageError выводит ошибку использования (неверные аргументы) и справку, завершает работу с кодом 2.
+// Без лога и стека вызовов: это подсказка пользователю, а не сбой программы.
+func usageError(msg string) {
+	fmt.Fprintln(os.Stderr, msg)
+	fmt.Fprintln(os.Stderr)
+	helpInfo()
+	os.Exit(2)
 }
 
 // helpInfo выводит справочную информацию
@@ -134,12 +146,12 @@ func createMigration(name string) {
 
 	// Создание up-файла
 	if err := os.WriteFile(upFile, []byte("-- Миграция вверх: "+name+"\n\n"), 0644); err != nil {
-		logger.Fatal("Ошибка создания up-файла:", err)
+		logger.Fatal("Ошибка создания up-файла", "err", err)
 	}
 
 	// Создание down-файла
 	if err := os.WriteFile(downFile, []byte("-- Миграция вниз: "+name+"\n\n"), 0644); err != nil {
-		logger.Fatal("Ошибка создания down-файла:", err)
+		logger.Fatal("Ошибка создания down-файла", "err", err)
 	}
 
 	fmt.Printf("Миграция создана: %s\n", upFile)

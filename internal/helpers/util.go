@@ -3,6 +3,7 @@ package helpers
 
 import (
 	"fmt"
+	"html"
 	"regexp"
 	"strings"
 
@@ -81,11 +82,12 @@ func ParseTaskInput(input string) (TaskInput, bool) {
 	}, true
 }
 
+// GetDisplayName возвращает имя для показа в сообщениях бота.
 func GetDisplayName(msg messaging.Message) string {
 	if msg.UserDisplayName != "" {
-		return msg.UserDisplayName
+		return html.EscapeString(msg.UserDisplayName)
 	}
-	return msg.UserName
+	return html.EscapeString(msg.UserName)
 }
 
 // GetUserNameForDB возвращает имя пользователя для сохранения в БД.

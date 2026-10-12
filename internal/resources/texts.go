@@ -2,36 +2,42 @@
 package resources
 
 const (
-	TXTStart                    = "<b>%v</b>. Выберите действие:"
-	TXTViewTasks                = "<b>%v</b> выберите фильтр для задач:"
+	TXTStart                    = "<b>%v</b>, выберите действие:"
+	TXTViewTasks                = "<b>%v</b>, выберите фильтр для задач:"
 	TXTAddTask                  = "<b>%v</b>, введите описание задачи и, если нужно, дедлайн:\nКупить молоко 10.10.2026 18:00\nКупить молоко 10.10.2026 (до конца дня)\nКупить молоко (без дедлайна)"
 	TXTAddTaskTemplate          = "Купить молоко 10.10.2026 18:00"
 	TXTSaveTask                 = "Задача успешно добавлена"
-	TXTFilterAll                = "<b>%v</b> вы просматриваете все имеющиеся задачи:"
-	TXTFilterCompleted          = "<b>%v</b> вы просматриваете все имеющиеся задачи в статусе <b>Выполнено</b>:"
-	TXTFilterOverdue            = "<b>%v</b> вы просматриваете все имеющиеся задачи в статусе <b>Просрочено</b>:"
-	TXTFilterClosed             = "<b>%v</b> вы просматриваете все имеющиеся задачи в статусе <b>Завершено</b>:"
-	TXTFilterInProgress         = "<b>%v</b> вы просматриваете все имеющиеся задачи в статусе <b>В процессе</b>:"
-	TXTDeleteTask               = "<b>%v</b> выберите задачу для удаления:"
-	TXTCompletedTaskByIDCommand = "<b>%v</b> здесь нужно добавить соответствующий текст:"
-	TXTClosedTaskByIDCommand    = "<b>%v</b> здесь нужно добавить соответствующий текст:"
-	TXTDeleteTaskByIDCommand    = "<b>%v</b> здесь нужно добавить соответствующий текст:"
-	TXTSetTimezone              = "<b>%v</b> пожалуйста, выберите ваш часовой пояс:"
+	TXTFilterAll                = "<b>%v</b>, все ваши задачи:"
+	TXTFilterCompleted          = "<b>%v</b>, задачи в статусе <b>Выполнено</b>:"
+	TXTFilterOverdue            = "<b>%v</b>, задачи в статусе <b>Просрочено</b>:"
+	TXTFilterClosed             = "<b>%v</b>, задачи в статусе <b>Завершено</b>:"
+	TXTFilterInProgress         = "<b>%v</b>, задачи в статусе <b>В процессе</b>:"
+	TXTDeleteTask               = "<b>%v</b>, выберите задачу для удаления:"
+	TXTCompletedTaskByIDCommand = "✅ Задача «%s» отмечена как <b>Выполнено</b>."
+	TXTClosedTaskByIDCommand    = "🏁 Задача «%s» отмечена как <b>Завершено</b>."
+	TXTDeleteTaskByIDCommand    = "🗑 Задача «%s» удалена."
+	TXTSetTimezone              = "<b>%v</b>, пожалуйста, выберите ваш часовой пояс:"
 	TXTSetTimezoneConfirm       = "✅ Часовой пояс успешно сохранён.\nТеперь даты будут интерпретироваться в вашем локальном времени."
-	TXTCompletedTask            = "<b>%v</b> выберите задачу для пометки <b>Выполнено</b>:"
-	TXTClosedTask               = "<b>%v</b> выберите задачу для пометки <b>Завершено</b>:"
-	TXTUpdateTask               = "Задача успешно обновлена"
+	TXTCompletedTask            = "<b>%v</b>, выберите задачу для пометки <b>Выполнено</b>:"
+	TXTClosedTask               = "<b>%v</b>, выберите задачу для пометки <b>Завершено</b>:"
 	TXTUnknownCommand           = "К сожалению, данная команда мне неизвестна. Для начала работы введите /start"
 )
 
-// FilterTexts сопоставляет ключи команд фильтрации с соответствующими текстовыми константами.
-var FilterTexts = map[string]string{
-	"filter_all":         TXTFilterAll,
-	"filter_in_progress": TXTFilterInProgress,
-	"filter_completed":   TXTFilterCompleted,
-	"filter_overdue":     TXTFilterOverdue,
-	"filter_closed":      TXTFilterClosed,
-}
+// Тексты пустых списков задач по фильтрам
+const (
+	TXTFilterAllEmpty        = "<b>%v</b>, у вас пока нет задач."
+	TXTFilterCompletedEmpty  = "<b>%v</b>, задач в статусе <b>Выполнено</b> нет."
+	TXTFilterOverdueEmpty    = "<b>%v</b>, задач в статусе <b>Просрочено</b> нет."
+	TXTFilterClosedEmpty     = "<b>%v</b>, задач в статусе <b>Завершено</b> нет."
+	TXTFilterInProgressEmpty = "<b>%v</b>, задач в статусе <b>В процессе</b> нет."
+)
+
+// Тексты пустых списков задач для действий
+const (
+	TXTCompletedTaskEmpty = "<b>%v</b>, нет задач, которые можно отметить <b>Выполнено</b>."
+	TXTClosedTaskEmpty    = "<b>%v</b>, нет задач, которые можно отметить <b>Завершено</b>."
+	TXTDeleteTaskEmpty    = "<b>%v</b>, у вас нет задач для удаления."
+)
 
 // Ошибки
 const (

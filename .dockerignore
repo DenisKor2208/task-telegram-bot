@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+.env.*
+*.bak
+.vscode
+.idea
+bin
+logs
+*.log
+Taskfile.yaml
+README.MD
+Dockerfile
+docker-compose.yml
+.dockerignore

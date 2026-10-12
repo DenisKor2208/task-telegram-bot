@@ -19,6 +19,7 @@ coverage.out
 
 # Environment variables and configuration files
 *.env
+*.bak
 .env.local
 .env.production
 *.local.yaml
@@ -43,7 +44,6 @@ logs/
 vendor/
 
 # Docker
-.dockerignore
 *.tar.gz
 
 # Docker build artifacts

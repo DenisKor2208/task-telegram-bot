@@ -7,7 +7,7 @@ import (
 )
 
 func Database(cfg *config.Service) (*sqlx.DB, error) {
-	db, err := dbutils.NewDBConnect(cfg.GetConfig().ConnectionStringDB)
+	db, err := dbutils.NewDBConnect(cfg.GetConfig().Database.ConnectionString)
 	if err != nil {
 		return nil, err
 	}

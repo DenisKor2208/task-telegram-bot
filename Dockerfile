@@ -15,9 +15,12 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/app
 # Компиляция мигратора (весь пакет cmd/migrator)
 RUN CGO_ENABLED=0 GOOS=linux go build -o migrator ./cmd/migrator
 
-FROM alpine:latest
+FROM alpine:3.24
 
 RUN apk --no-cache add ca-certificates tzdata
+
+# Пользователь без прав root
+RUN adduser -D -H app
 
 WORKDIR /app
 
@@ -26,7 +29,7 @@ COPY --from=builder /build/migrator .
 COPY --from=builder /build/config ./config
 COPY --from=builder /build/migrations ./migrations
 
-EXPOSE 8080
+USER app
 
 # Для сервиса app команда будет переопределена в docker-compose,
 # поэтому здесь можно оставить заглушку или убрать CMD.

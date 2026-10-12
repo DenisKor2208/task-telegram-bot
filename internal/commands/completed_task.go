@@ -39,6 +39,11 @@ func (c *CompletedTaskCommand) Execute(s command.Model, msg messaging.Message) e
 		return errors.Wrap(err, "Не удалось получить задачи")
 	}
 
+	// Задач нет
+	if len(tasks) == 0 {
+		text = fmt.Sprintf(resources.TXTCompletedTaskEmpty, displayName)
+	}
+
 	// Инициализируем кнопки
 	var buttons []bottypes.TgRowButtons
 
@@ -48,16 +53,9 @@ func (c *CompletedTaskCommand) Execute(s command.Model, msg messaging.Message) e
 	// Дедлайны показываем в часовом поясе пользователя
 	loc := helpers.UserLocation(s.GetCtx(), s.GetUserStorage(), msg.UserID)
 
-	// Добавляем кнопки для каждой задачи
+	// Добавляем кнопку для каждой задачи (цвет и эмодзи по статусу)
 	for _, task := range tasks {
-		deadlineStr := helpers.DeadlineLabel(task.Deadline, loc)
-
-		button := bottypes.TgInlineButton{
-			DisplayName: fmt.Sprintf("%s (%s)", task.Description, deadlineStr),
-			Value:       fmt.Sprintf("/completed_task_by_id %d", task.ID),
-		}
-
-		// Добавляем как новый ряд
+		button := helpers.TaskButton(task, loc, "/completed_task_by_id")
 		additionalButtons = append(additionalButtons, bottypes.TgRowButtons{button})
 	}
 
